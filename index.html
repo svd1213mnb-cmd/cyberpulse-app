@@ -75,9 +75,11 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;border:0;
 @media(max-width:900px){
   .app{display:block;padding:0;height:100dvh}
   .side,.ws{position:absolute;inset:0;border-radius:0}
-  #back-btn{display:grid !important}
-  .app.chat-open .side{display:none}
+  .ws{display:none;} /* Скрываем чат по умолчанию */
+  .app.chat-open .ws{display:flex;} /* Показываем чат только при клике */
+  .app.chat-open .side{display:none;} /* Скрываем список пользователей */
 }
+
 </style>
 </head>
 <body>
