@@ -93,7 +93,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .btn.ghost{background:var(--panel2);border:1px solid var(--line2);color:var(--acc2)}
 .modal{position:fixed;inset:0;z-index:4000;display:none;align-items:center;justify-content:center;background:rgba(1,3,8,.85);backdrop-filter:blur(10px);padding:16px}
 .modal.show{display:flex}
-.dialog{width:min(480px,100%);background:var(--panel2);border:1px solid var(--line2);border-radius:24px;padding:22px;max-height:85vh;overflow-y:auto}
+.dialog{width:min(480px,100%);background:var(--panel2);border:1px solid var(--line2);border-radius:24px;padding:22px;max-height:85vh;overflow-y:auto;position:relative}
 .hidden{display:none!important}
 .toast{position:fixed;z-index:9999;top:calc(22px + var(--safe-top));left:50%;transform:translateX(-50%);padding:10px 20px;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;font:700 12.5px 'JetBrains Mono';pointer-events:none}
 @media(max-width:1199px){
@@ -186,6 +186,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 'use strict';
 
 const firebaseConfig = {apiKey:"AIzaSyCOwnNn1MdC-JB2iwgv4PuuciqPHDR8EqA",authDomain:"cyberpulse-b5ca4.firebaseapp.com",databaseURL:"https://cyberpulse-b5ca4-default-rtdb.firebaseio.com",projectId:"cyberpulse-b5ca4",storageBucket:"cyberpulse-b5ca4.firebasestorage.app",messagingSenderId:"640950603280",appId:"1:640950603280:web:1db07a551a79c5ce274495"};
+const RENDER_URL = "https://cyberpulse-rlu7.onrender.com/api/signature";
 
 const $ = id => document.getElementById(id);
 const safe = (v='') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -254,7 +255,6 @@ function initFirebase() {
     if(u) {
       user = u; $('auth-screen').classList.add('hidden');
       
-      // ИСПРАВЛЕНО: u.uid вместо uid
       if(!(await LocalDB.get('keys', 'priv_'+u.uid))) {
         const kp = await crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"}, false, ["deriveKey","deriveBits"]);
         await LocalDB.set('keys', 'priv_'+u.uid, kp.privateKey);
@@ -448,9 +448,20 @@ $('bookmarks-btn').onclick = async () => {
   openModal(html);
 };
 
-function openModal(html) { $('dialog').innerHTML = html; $('modal').classList.add('show'); }
+// === ИСПРАВЛЕННЫЕ ФУНКЦИИ МОДАЛЬНОГО ОКНА ===
+function openModal(html) { 
+  $('dialog').innerHTML = `
+    <button class="ibtn" style="position:absolute;top:15px;right:15px;z-index:100;color:var(--text);background:var(--panel);" onclick="window.closeModal()">✕</button>
+    <div style="margin-top:20px">${html}</div>
+  `; 
+  $('modal').classList.add('show'); 
+}
 function closeModal() { $('modal').classList.remove('show'); }
 window.closeModal = closeModal;
+
+$('modal').onclick = (e) => {
+  if (e.target.id === 'modal') closeModal();
+};
 
 $('send-button').onclick = sendMessage;
 $('message-input').onkeydown = e => { if(e.key === 'Enter') sendMessage(); };
