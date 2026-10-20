@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#03050a" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>CYBER_PULSE v28.5 · Ultra</title>
+<title>CYBER_PULSE v28.6 · Ultra</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -33,21 +33,23 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .mark{width:38px;height:38px;border-radius:12px;background:var(--grad);display:grid;place-items:center;color:#03050a;font:900 18px 'JetBrains Mono';animation:pulseGlow 4s infinite}
 .brand-n{font:900 15px 'JetBrains Mono';background:var(--grad);-webkit-background-clip:text;color:transparent}
 .brand-s{font:700 8.5px 'JetBrains Mono';color:var(--muted)}
-.me{display:flex;align-items:center;gap:12px;margin:0 14px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:16px;cursor:pointer}
+.me{display:flex;align-items:center;gap:12px;margin:0 14px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:16px;cursor:pointer;transition:all .2s}
+.me:hover{border-color:var(--line2);transform:translateY(-1px)}
 .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:#03050a;flex:none;overflow:hidden}
 .av img{width:100%;height:100%;object-fit:cover}
 .me-name{font-size:14px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .search{padding:6px 14px 4px;position:relative}
 .search input{width:100%;background:rgba(12,16,28,.5);border:1px solid var(--line);border-radius:14px;padding:10px 14px 10px 38px;color:var(--text)}
 .search:before{content:'⌕';position:absolute;left:24px;top:15px;color:var(--muted);font-size:16px}
-/* ВОЗВРАЩАЕМ ФИЛЬТРЫ */
-.folders-bar{display:flex;gap:6px;padding:6px 14px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.folders-bar{display:flex;gap:6px;padding:6px 14px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.folders-bar::-webkit-scrollbar{display:none}
 .folder-chip{padding:5px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:700 11px 'JetBrains Mono';cursor:pointer;white-space:nowrap;transition:all .2s}
 .folder-chip.active{background:var(--grad);color:#03050a;border-color:transparent}
 .clist{flex:1;overflow-y:auto;padding:0 10px 10px}
 .citem{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;cursor:pointer;transition:all .2s;border:1px solid transparent}
 .citem:hover,.citem.sel{background:var(--panel2);border-color:var(--line2)}
-.cav{width:42px;height:42px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:var(--acc2);flex:none}
+.cav{width:42px;height:42px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:var(--acc2);flex:none;overflow:hidden}
+.cav img{width:100%;height:100%;object-fit:cover}
 .ccopy{flex:1;min-width:0;text-align:left}
 .ct{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
 .ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -130,20 +132,23 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 <header class="brand">
 <div class="brand-l" style="display:flex;gap:10px;align-items:center">
 <div class="mark">⌁</div>
-<div><div class="brand-n">CYBER_PULSE</div><div class="brand-s">v28.5 · ULTRA</div></div>
+<div><div class="brand-n">CYBER_PULSE</div><div class="brand-s">v28.6 · ULTRA</div></div>
 </div>
 <button class="ibtn" id="bookmarks-btn" title="Закладки">🔖</button>
 <button class="ibtn" id="settings-open">⚙</button>
 </header>
+
+<!-- Возвращенный профиль для загрузки аватара -->
 <div class="me" id="me-card">
 <div class="av" id="avatar-button"><span id="avatar-letter">?</span><img id="avatar-img" class="hidden" alt="" /></div>
 <div style="min-width:0;flex:1">
 <div class="me-name" id="profile-name">Загрузка…</div>
+<div style="font:700 9px 'JetBrains Mono';color:var(--ok);margin-top:2px">УЗЕЛ АКТИВЕН</div>
 </div>
 </div>
+
 <div class="search"><input id="list-search" placeholder="Поиск..." autocomplete="off" /></div>
 
-<!-- ВОЗВРАЩАЕМ ФИЛЬТРЫ В HTML -->
 <div class="folders-bar" id="folders-bar">
   <div class="folder-chip active" data-folder="all">Все</div>
   <div class="folder-chip" data-folder="dm">Личные</div>
@@ -154,6 +159,7 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 
 <div class="clist" id="dynamic-list"></div>
 </aside>
+
 <section class="ws">
 <header class="chead">
 <button class="ibtn back" id="back">←</button>
@@ -257,12 +263,37 @@ async function decryptText(b64, chatId, otherUid){
     return new TextDecoder().decode(dec);
   } catch(e){ return '[X]'; }
 }
+async function encryptFileBuffer(buf, chatId, otherUid){
+  const key = await getChatKey(chatId, otherUid); const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, buf);
+  const comb = new Uint8Array(iv.length + ct.byteLength); comb.set(iv,0); comb.set(new Uint8Array(ct), iv.length);
+  return comb.buffer;
+}
+
+// ========== ЗАГРУЗКА НА CLOUDINARY ==========
+async function uploadToCloudinary(blob) {
+  const res = await fetch(RENDER_URL);
+  const auth = await res.json();
+  
+  const fd = new FormData();
+  fd.append('file', blob);
+  fd.append('api_key', auth.apiKey);
+  fd.append('timestamp', auth.timestamp);
+  fd.append('signature', auth.signature);
+  fd.append('folder', auth.folder);
+  
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${auth.cloudName}/auto/upload`, { method: 'POST', body: fd });
+  const data = await uploadRes.json();
+  if (data.secure_url) return data.secure_url;
+  throw new Error('Upload failed');
+}
 
 let app=null, auth=null, db=null, user=null;
-let profile={username:''};
+let profile={username:'', avatarUrl:''};
 let chats=[], messages=[], users={};
 let currentChatId='global', registerMode=false;
 let ctxMsgId=null, currentFolder='all';
+let tempAvatarFile = null;
 
 function initFirebase() {
   app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.database();
@@ -278,9 +309,18 @@ function initFirebase() {
       }
 
       const snap = await db.ref('usersPublic/'+u.uid).once('value');
-      profile = snap.val() || { username: 'AGENT' };
+      profile = snap.val() || { username: 'AGENT', avatarUrl: '' };
       $('profile-name').textContent = profile.username;
       
+      // Установка аватара в UI
+      if(profile.avatarUrl) {
+        $('avatar-img').src = profile.avatarUrl;
+        $('avatar-img').classList.remove('hidden');
+        $('avatar-letter').classList.add('hidden');
+      } else {
+        $('avatar-letter').textContent = profile.username.charAt(0).toUpperCase();
+      }
+
       db.ref('chatMeta').on('value', s => {
         chats = Object.entries(s.val()||{}).map(([id,v])=>({id,...v}));
         if(!chats.some(c=>c.id==='global')) chats.unshift({id:'global', title:'GLOBAL_NET', type:'channel'});
@@ -299,17 +339,14 @@ function initFirebase() {
 
 function renderList() {
   const box = $('dynamic-list'); box.innerHTML = '';
-  
   const savedChatId = 'dm_' + [user.uid, user.uid].sort().join('_');
   let filtered = [...chats];
 
-  // Фильтрация по папкам
   if(currentFolder === 'dm') filtered = filtered.filter(c => c.type === 'dm');
   else if(currentFolder === 'group') filtered = filtered.filter(c => c.type === 'group');
   else if(currentFolder === 'channel') filtered = filtered.filter(c => c.type === 'channel' || c.id === 'global');
   else if(currentFolder === 'unread') filtered = filtered.filter(c => (c.unreadCounts?.[user.uid] || 0) > 0);
 
-  // Всегда показываем "Избранное" в "Все" и "Личные"
   if(currentFolder === 'all' || currentFolder === 'dm') {
     box.innerHTML += `<button class="citem ${savedChatId===currentChatId?'sel':''}" onclick="window.openChat('${savedChatId}')">
       <span class="cav" style="background:var(--grad);color:#000">⭐</span>
@@ -429,28 +466,7 @@ window.ctxAction = async (act) => {
   if(act === 'delete') { await db.ref(`chats/${currentChatId}/messages/${ctxMsgId}`).remove(); toast('Удалено'); }
 };
 
-$('ai-reply-btn').onclick = async () => {
-  if(!settings.geminiKey) return toast('Укажите Gemini Key в настройках ⚙');
-  if(messages.length === 0) return;
-  toast('✨ AI думает...');
-  const lastMsgs = messages.slice(-3).map(m=>m.text).join('\n');
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiKey}`, {
-      method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: `Предложи 3 коротких варианта ответа на сообщение:\n${lastMsgs}\nВыведи только 3 варианта через |` }] }] })
-    });
-    const data = await res.json();
-    const text = data.candidates[0].content.parts[0].text;
-    const options = text.split('|').map(s=>s.trim()).filter(s=>s).slice(0,3);
-    const chips = $('ai-chips'); chips.innerHTML = '';
-    options.forEach(opt => {
-      const btn = document.createElement('div'); btn.className = 'ai-chip'; btn.textContent = opt;
-      btn.onclick = () => { $('message-input').value = opt; sendMessage(); };
-      chips.appendChild(btn);
-    });
-    chips.classList.add('show');
-  } catch(e) { toast('AI ошибка'); }
-};
-
+// ========== НАСТРОЙКИ, ПРОФИЛЬ, ЗАКЛАДКИ ==========
 $('settings-open').onclick = () => {
   openModal(`
     <div style="font:800 16px 'JetBrains Mono';margin-bottom:15px">НАСТРОЙКИ</div>
@@ -483,7 +499,86 @@ $('bookmarks-btn').onclick = async () => {
   openModal(html);
 };
 
-// ИСПРАВЛЕННЫЕ ФУНКЦИИ МОДАЛЬНОГО ОКНА (с кнопкой закрытия)
+$('me-card').onclick = () => {
+  openModal(`
+    <div style="font:800 16px 'JetBrains Mono';margin-bottom:15px">ПРОФИЛЬ</div>
+    <div style="text-align:center;margin-bottom:15px">
+      <label for="av-file" style="cursor:pointer;display:inline-block;position:relative">
+        <img id="av-preview" src="${profile.avatarUrl || 'https://via.placeholder.com/80/03050a/22d3ee?text=?'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--acc2)">
+        <div style="position:absolute;bottom:0;right:0;background:var(--grad);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;color:#000">📷</div>
+      </label>
+      <input type="file" id="av-file" accept="image/*" style="display:none" onchange="window.previewAvatar(this)">
+    </div>
+    <label style="font:800 10px 'JetBrains Mono';color:var(--muted)">ПОЗЫВНОЙ</label>
+    <input class="field" id="prof-name" value="${safe(profile.username)}">
+    <button class="btn primary" style="width:100%;margin-top:15px" onclick="window.saveProfile()">СОХРАНИТЬ</button>
+  `);
+};
+
+window.previewAvatar = (input) => {
+  if(input.files && input.files[0]) {
+    tempAvatarFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => { document.getElementById('av-preview').src = e.target.result; };
+    reader.readAsDataURL(tempAvatarFile);
+  }
+};
+
+window.saveProfile = async () => {
+  const newName = document.getElementById('prof-name').value.trim() || profile.username;
+  let newAvatarUrl = profile.avatarUrl;
+  
+  if(tempAvatarFile) {
+    toast('Загрузка аватара...');
+    try {
+      newAvatarUrl = await uploadToCloudinary(tempAvatarFile);
+    } catch(e) {
+      return toast('Ошибка загрузки аватара');
+    }
+  }
+  
+  await db.ref(`usersPublic/${user.uid}`).update({ username: newName, avatarUrl: newAvatarUrl });
+  profile.username = newName;
+  profile.avatarUrl = newAvatarUrl;
+  
+  $('profile-name').textContent = newName;
+  if(newAvatarUrl) {
+    $('avatar-img').src = newAvatarUrl;
+    $('avatar-img').classList.remove('hidden');
+    $('avatar-letter').classList.add('hidden');
+  } else {
+    $('avatar-letter').textContent = newName.charAt(0).toUpperCase();
+  }
+  
+  tempAvatarFile = null;
+  closeModal();
+  toast('Профиль обновлен');
+};
+
+// ========== AI ==========
+$('ai-reply-btn').onclick = async () => {
+  if(!settings.geminiKey) return toast('Укажите Gemini Key в настройках ⚙');
+  if(messages.length === 0) return;
+  toast('✨ AI думает...');
+  const lastMsgs = messages.slice(-3).map(m=>m.text).join('\n');
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiKey}`, {
+      method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: `Предложи 3 коротких варианта ответа на сообщение:\n${lastMsgs}\nВыведи только 3 варианта через |` }] }] })
+    });
+    const data = await res.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const options = text.split('|').map(s=>s.trim()).filter(s=>s).slice(0,3);
+    const chips = $('ai-chips'); chips.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('div'); btn.className = 'ai-chip'; btn.textContent = opt;
+      btn.onclick = () => { $('message-input').value = opt; sendMessage(); };
+      chips.appendChild(btn);
+    });
+    chips.classList.add('show');
+  } catch(e) { toast('AI ошибка'); }
+};
+
+// ========== МОДАЛЬНЫЕ ОКНА (С КНОПКОЙ ЗАКРЫТИЯ) ==========
 function openModal(html) { 
   $('dialog').innerHTML = `
     <button class="ibtn" style="position:absolute;top:15px;right:15px;z-index:100;color:var(--text);background:var(--panel);" onclick="window.closeModal()">✕</button>
@@ -498,11 +593,11 @@ $('modal').onclick = (e) => {
   if (e.target.id === 'modal') closeModal();
 };
 
+// ========== ЗАПИСЬ ГОЛОСА, ОТПРАВКА, PIN ==========
 $('send-button').onclick = sendMessage;
 $('message-input').onkeydown = e => { if(e.key === 'Enter') sendMessage(); };
 $('back').onclick = () => $('app').classList.remove('chat-open');
 
-// Обработчики для возвращенных фильтров
 document.querySelectorAll('.folder-chip').forEach(chip => {
   chip.onclick = () => {
     document.querySelectorAll('.folder-chip').forEach(c => c.classList.remove('active'));
