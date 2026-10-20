@@ -33,23 +33,21 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .mark{width:38px;height:38px;border-radius:12px;background:var(--grad);display:grid;place-items:center;color:#03050a;font:900 18px 'JetBrains Mono';animation:pulseGlow 4s infinite}
 .brand-n{font:900 15px 'JetBrains Mono';background:var(--grad);-webkit-background-clip:text;color:transparent}
 .brand-s{font:700 8.5px 'JetBrains Mono';color:var(--muted)}
-.me{display:flex;align-items:center;gap:12px;margin:0 14px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:16px;cursor:pointer;transition:all .2s}
-.me:hover{border-color:var(--line2);transform:translateY(-1px)}
+.me{display:flex;align-items:center;gap:12px;margin:0 14px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:16px;cursor:pointer;transition:all 0.2s}
+.me:hover{border-color:var(--line2)}
 .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:#03050a;flex:none;overflow:hidden}
 .av img{width:100%;height:100%;object-fit:cover}
 .me-name{font-size:14px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .search{padding:6px 14px 4px;position:relative}
 .search input{width:100%;background:rgba(12,16,28,.5);border:1px solid var(--line);border-radius:14px;padding:10px 14px 10px 38px;color:var(--text)}
 .search:before{content:'⌕';position:absolute;left:24px;top:15px;color:var(--muted);font-size:16px}
-.folders-bar{display:flex;gap:6px;padding:6px 14px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
-.folders-bar::-webkit-scrollbar{display:none}
+.folders-bar{display:flex;gap:6px;padding:6px 14px;overflow-x:auto;border-bottom:1px solid var(--line)}
 .folder-chip{padding:5px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:700 11px 'JetBrains Mono';cursor:pointer;white-space:nowrap;transition:all .2s}
 .folder-chip.active{background:var(--grad);color:#03050a;border-color:transparent}
 .clist{flex:1;overflow-y:auto;padding:0 10px 10px}
 .citem{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;cursor:pointer;transition:all .2s;border:1px solid transparent}
 .citem:hover,.citem.sel{background:var(--panel2);border-color:var(--line2)}
-.cav{width:42px;height:42px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:var(--acc2);flex:none;overflow:hidden}
-.cav img{width:100%;height:100%;object-fit:cover}
+.cav{width:42px;height:42px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:var(--acc2);flex:none}
 .ccopy{flex:1;min-width:0;text-align:left}
 .ct{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
 .ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -137,18 +135,14 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 <button class="ibtn" id="bookmarks-btn" title="Закладки">🔖</button>
 <button class="ibtn" id="settings-open">⚙</button>
 </header>
-
-<!-- Возвращенный профиль для загрузки аватара -->
+<!-- Кликабельная карточка профиля для смены аватарки -->
 <div class="me" id="me-card">
 <div class="av" id="avatar-button"><span id="avatar-letter">?</span><img id="avatar-img" class="hidden" alt="" /></div>
 <div style="min-width:0;flex:1">
 <div class="me-name" id="profile-name">Загрузка…</div>
-<div style="font:700 9px 'JetBrains Mono';color:var(--ok);margin-top:2px">УЗЕЛ АКТИВЕН</div>
 </div>
 </div>
-
 <div class="search"><input id="list-search" placeholder="Поиск..." autocomplete="off" /></div>
-
 <div class="folders-bar" id="folders-bar">
   <div class="folder-chip active" data-folder="all">Все</div>
   <div class="folder-chip" data-folder="dm">Личные</div>
@@ -156,10 +150,8 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
   <div class="folder-chip" data-folder="channel">Каналы</div>
   <div class="folder-chip" data-folder="unread">Непрочитанные</div>
 </div>
-
 <div class="clist" id="dynamic-list"></div>
 </aside>
-
 <section class="ws">
 <header class="chead">
 <button class="ibtn back" id="back">←</button>
@@ -270,30 +262,12 @@ async function encryptFileBuffer(buf, chatId, otherUid){
   return comb.buffer;
 }
 
-// ========== ЗАГРУЗКА НА CLOUDINARY ==========
-async function uploadToCloudinary(blob) {
-  const res = await fetch(RENDER_URL);
-  const auth = await res.json();
-  
-  const fd = new FormData();
-  fd.append('file', blob);
-  fd.append('api_key', auth.apiKey);
-  fd.append('timestamp', auth.timestamp);
-  fd.append('signature', auth.signature);
-  fd.append('folder', auth.folder);
-  
-  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${auth.cloudName}/auto/upload`, { method: 'POST', body: fd });
-  const data = await uploadRes.json();
-  if (data.secure_url) return data.secure_url;
-  throw new Error('Upload failed');
-}
-
 let app=null, auth=null, db=null, user=null;
 let profile={username:'', avatarUrl:''};
 let chats=[], messages=[], users={};
 let currentChatId='global', registerMode=false;
 let ctxMsgId=null, currentFolder='all';
-let tempAvatarFile = null;
+let voiceRecorder=null, voiceChunks=[];
 
 function initFirebase() {
   app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.database();
@@ -309,18 +283,18 @@ function initFirebase() {
       }
 
       const snap = await db.ref('usersPublic/'+u.uid).once('value');
-      profile = snap.val() || { username: 'AGENT', avatarUrl: '' };
-      $('profile-name').textContent = profile.username;
+      profile = snap.val() || { username: 'AGENT' };
       
-      // Установка аватара в UI
-      if(profile.avatarUrl) {
+      // Отображение профиля в левом меню
+      $('profile-name').textContent = profile.username;
+      if(profile.avatarUrl){
         $('avatar-img').src = profile.avatarUrl;
         $('avatar-img').classList.remove('hidden');
         $('avatar-letter').classList.add('hidden');
       } else {
         $('avatar-letter').textContent = profile.username.charAt(0).toUpperCase();
       }
-
+      
       db.ref('chatMeta').on('value', s => {
         chats = Object.entries(s.val()||{}).map(([id,v])=>({id,...v}));
         if(!chats.some(c=>c.id==='global')) chats.unshift({id:'global', title:'GLOBAL_NET', type:'channel'});
@@ -336,6 +310,118 @@ function initFirebase() {
     }
   });
 }
+
+// === ЗАГРУЗКА ФАЙЛОВ (ВОЗВРАЩЕНО) ===
+async function uploadMedia(file, type) {
+  toast('🔒 Загрузка (0%)...');
+  try {
+    const buf = await file.arrayBuffer();
+    const enc = await encryptFileBuffer(buf, currentChatId, null);
+    const authRes = await fetch(RENDER_URL);
+    const authData = await authRes.json();
+    
+    const fd = new FormData(); 
+    fd.append('file', new Blob([enc]));
+    fd.append('api_key', authData.apiKey); 
+    fd.append('timestamp', authData.timestamp); 
+    fd.append('signature', authData.signature);
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${authData.cloudName}/auto/upload`);
+    xhr.upload.onprogress = e => { if(e.lengthComputable) toast(`🔒 Загрузка (${Math.round((e.loaded * 100) / e.total)}%)...`); };
+    
+    xhr.onload = async () => {
+      if(xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        const msg = { id: idgen('msg'), sender: profile.username, senderId: user.uid, mediaUrl: res.secure_url, mediaType: type, time: nowTime(), createdAt: Date.now() };
+        await db.ref(`chats/${currentChatId}/messages/${msg.id}`).set(msg);
+        toast('Отправлено');
+      } else { toast('Ошибка загрузки'); }
+    };
+    xhr.send(fd);
+  } catch(e) { console.error(e); toast('Ошибка загрузки'); }
+}
+
+async function toggleVoice(){
+  if(voiceRecorder){
+    voiceRecorder.stop();
+    $('audio-note-button').classList.remove('recording');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    voiceChunks = []; voiceRecorder = new MediaRecorder(stream);
+    voiceRecorder.ondataavailable = e => { if(e.data.size>0) voiceChunks.push(e.data); };
+    
+    voiceRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(voiceChunks, {type:'audio/webm'});
+      await uploadMedia(new File([blob], 'voice.webm', {type:'audio/webm'}), 'audio');
+    };
+    
+    voiceRecorder.start(); $('audio-note-button').classList.add('recording');
+    toast('🔴 Запись...');
+  } catch(e) { toast('Нет доступа к микрофону'); }
+}
+
+// === ОТКРЫТИЕ ПРОФИЛЯ И ЗАГРУЗКА АВАТАРКИ ===
+$('me-card').onclick = () => {
+  openModal(`
+    <div style="text-align:center;margin-bottom:15px">
+      <div class="av" id="modal-avatar-preview" style="width:80px;height:80px;margin:0 auto;font-size:30px;cursor:pointer" onclick="document.getElementById('avatar-file-input').click()">
+        ${profile.avatarUrl ? `<img src="${profile.avatarUrl}">` : (profile.username?profile.username.charAt(0).toUpperCase():'?')}
+      </div>
+      <p style="color:var(--muted);font-size:11px;margin-top:5px">Нажмите на аватар, чтобы сменить</p>
+      <input type="file" id="avatar-file-input" style="display:none" accept="image/*">
+    </div>
+    <label style="font:800 10px 'JetBrains Mono';color:var(--muted)">ПОЗЫВНОЙ</label>
+    <input class="field" id="prof-name" value="${profile.username}">
+    <button class="btn primary" style="width:100%;margin-top:10px" onclick="window.saveProfile()">СОХРАНИТЬ</button>
+  `);
+
+  $('avatar-file-input').onchange = async (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    try {
+      toast('Загрузка аватарки...');
+      const authRes = await fetch(RENDER_URL);
+      const authData = await authRes.json();
+      
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('api_key', authData.apiKey);
+      fd.append('timestamp', authData.timestamp);
+      fd.append('signature', authData.signature);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${authData.cloudName}/auto/upload`);
+      xhr.onload = async () => {
+        if(xhr.status === 200) {
+          const res = JSON.parse(xhr.responseText);
+          await db.ref(`usersPublic/${user.uid}/avatarUrl`).set(res.secure_url);
+          profile.avatarUrl = res.secure_url;
+          
+          $('avatar-img').src = res.secure_url;
+          $('avatar-img').classList.remove('hidden');
+          $('avatar-letter').classList.add('hidden');
+          $('modal-avatar-preview').innerHTML = `<img src="${res.secure_url}">`;
+          toast('Аватарка обновлена!');
+        }
+      };
+      xhr.send(fd);
+    } catch(err) { toast('Ошибка загрузки аватарки'); }
+  };
+};
+
+window.saveProfile = async () => {
+  const newName = $('prof-name').value.trim();
+  if(newName) {
+    await db.ref(`usersPublic/${user.uid}/username`).update(newName);
+    profile.username = newName;
+    $('profile-name').textContent = newName;
+  }
+  closeModal();
+  toast('Профиль сохранен');
+};
 
 function renderList() {
   const box = $('dynamic-list'); box.innerHTML = '';
@@ -376,7 +462,8 @@ window.openChat = function(id) {
   messages = []; $('messages').innerHTML = '';
   
   const disp = chats.find(c=>c.id===id);
-  const otherUid = disp?.members ? Object.keys(disp.members).find(u=>u!==user.uid) : (id.includes('dm_') ? id.split('_')[2] : null);
+  let otherUid = disp?.members ? Object.keys(disp.members).find(u=>u!==user.uid) : null;
+  if(!otherUid && id.includes('dm_')) otherUid = id.split('_')[2];
 
   db.ref(`chats/${id}/messages`).limitToLast(50).on('child_added', async snap => {
     const val = snap.val();
@@ -466,7 +553,28 @@ window.ctxAction = async (act) => {
   if(act === 'delete') { await db.ref(`chats/${currentChatId}/messages/${ctxMsgId}`).remove(); toast('Удалено'); }
 };
 
-// ========== НАСТРОЙКИ, ПРОФИЛЬ, ЗАКЛАДКИ ==========
+$('ai-reply-btn').onclick = async () => {
+  if(!settings.geminiKey) return toast('Укажите Gemini Key в настройках ⚙');
+  if(messages.length === 0) return;
+  toast('✨ AI думает...');
+  const lastMsgs = messages.slice(-3).map(m=>m.text).join('\n');
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiKey}`, {
+      method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: `Предложи 3 коротких варианта ответа на сообщение:\n${lastMsgs}\nВыведи только 3 варианта через |` }] }] })
+    });
+    const data = await res.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const options = text.split('|').map(s=>s.trim()).filter(s=>s).slice(0,3);
+    const chips = $('ai-chips'); chips.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('div'); btn.className = 'ai-chip'; btn.textContent = opt;
+      btn.onclick = () => { $('message-input').value = opt; sendMessage(); };
+      chips.appendChild(btn);
+    });
+    chips.classList.add('show');
+  } catch(e) { toast('AI ошибка'); }
+};
+
 $('settings-open').onclick = () => {
   openModal(`
     <div style="font:800 16px 'JetBrains Mono';margin-bottom:15px">НАСТРОЙКИ</div>
@@ -499,86 +607,6 @@ $('bookmarks-btn').onclick = async () => {
   openModal(html);
 };
 
-$('me-card').onclick = () => {
-  openModal(`
-    <div style="font:800 16px 'JetBrains Mono';margin-bottom:15px">ПРОФИЛЬ</div>
-    <div style="text-align:center;margin-bottom:15px">
-      <label for="av-file" style="cursor:pointer;display:inline-block;position:relative">
-        <img id="av-preview" src="${profile.avatarUrl || 'https://via.placeholder.com/80/03050a/22d3ee?text=?'}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--acc2)">
-        <div style="position:absolute;bottom:0;right:0;background:var(--grad);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;color:#000">📷</div>
-      </label>
-      <input type="file" id="av-file" accept="image/*" style="display:none" onchange="window.previewAvatar(this)">
-    </div>
-    <label style="font:800 10px 'JetBrains Mono';color:var(--muted)">ПОЗЫВНОЙ</label>
-    <input class="field" id="prof-name" value="${safe(profile.username)}">
-    <button class="btn primary" style="width:100%;margin-top:15px" onclick="window.saveProfile()">СОХРАНИТЬ</button>
-  `);
-};
-
-window.previewAvatar = (input) => {
-  if(input.files && input.files[0]) {
-    tempAvatarFile = input.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => { document.getElementById('av-preview').src = e.target.result; };
-    reader.readAsDataURL(tempAvatarFile);
-  }
-};
-
-window.saveProfile = async () => {
-  const newName = document.getElementById('prof-name').value.trim() || profile.username;
-  let newAvatarUrl = profile.avatarUrl;
-  
-  if(tempAvatarFile) {
-    toast('Загрузка аватара...');
-    try {
-      newAvatarUrl = await uploadToCloudinary(tempAvatarFile);
-    } catch(e) {
-      return toast('Ошибка загрузки аватара');
-    }
-  }
-  
-  await db.ref(`usersPublic/${user.uid}`).update({ username: newName, avatarUrl: newAvatarUrl });
-  profile.username = newName;
-  profile.avatarUrl = newAvatarUrl;
-  
-  $('profile-name').textContent = newName;
-  if(newAvatarUrl) {
-    $('avatar-img').src = newAvatarUrl;
-    $('avatar-img').classList.remove('hidden');
-    $('avatar-letter').classList.add('hidden');
-  } else {
-    $('avatar-letter').textContent = newName.charAt(0).toUpperCase();
-  }
-  
-  tempAvatarFile = null;
-  closeModal();
-  toast('Профиль обновлен');
-};
-
-// ========== AI ==========
-$('ai-reply-btn').onclick = async () => {
-  if(!settings.geminiKey) return toast('Укажите Gemini Key в настройках ⚙');
-  if(messages.length === 0) return;
-  toast('✨ AI думает...');
-  const lastMsgs = messages.slice(-3).map(m=>m.text).join('\n');
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiKey}`, {
-      method: 'POST', body: JSON.stringify({ contents: [{ parts: [{ text: `Предложи 3 коротких варианта ответа на сообщение:\n${lastMsgs}\nВыведи только 3 варианта через |` }] }] })
-    });
-    const data = await res.json();
-    const text = data.candidates[0].content.parts[0].text;
-    const options = text.split('|').map(s=>s.trim()).filter(s=>s).slice(0,3);
-    const chips = $('ai-chips'); chips.innerHTML = '';
-    options.forEach(opt => {
-      const btn = document.createElement('div'); btn.className = 'ai-chip'; btn.textContent = opt;
-      btn.onclick = () => { $('message-input').value = opt; sendMessage(); };
-      chips.appendChild(btn);
-    });
-    chips.classList.add('show');
-  } catch(e) { toast('AI ошибка'); }
-};
-
-// ========== МОДАЛЬНЫЕ ОКНА (С КНОПКОЙ ЗАКРЫТИЯ) ==========
 function openModal(html) { 
   $('dialog').innerHTML = `
     <button class="ibtn" style="position:absolute;top:15px;right:15px;z-index:100;color:var(--text);background:var(--panel);" onclick="window.closeModal()">✕</button>
@@ -593,7 +621,6 @@ $('modal').onclick = (e) => {
   if (e.target.id === 'modal') closeModal();
 };
 
-// ========== ЗАПИСЬ ГОЛОСА, ОТПРАВКА, PIN ==========
 $('send-button').onclick = sendMessage;
 $('message-input').onkeydown = e => { if(e.key === 'Enter') sendMessage(); };
 $('back').onclick = () => $('app').classList.remove('chat-open');
@@ -606,6 +633,17 @@ document.querySelectorAll('.folder-chip').forEach(chip => {
     renderList();
   };
 });
+
+$('audio-note-button').onclick = toggleVoice;
+
+$('plus-button').onclick = () => {
+  openModal(`
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn primary" onclick="document.getElementById('modal').classList.remove('show'); navigator.geolocation.getCurrentPosition(async (pos)=>{ const msg = { id: idgen('msg'), sender: profile.username, senderId: user.uid, geo: { lat: pos.coords.latitude, lng: pos.coords.longitude }, time: nowTime(), createdAt: Date.now() }; await db.ref('chats/'+currentChatId+'/messages/'+msg.id).set(msg); toast('Геопозиция отправлена'); });">📍 Отправить геопозицию</button>
+      <button class="btn ghost" onclick="document.getElementById('modal').classList.remove('show')">Отмена</button>
+    </div>
+  `);
+};
 
 let enteredPin = '';
 document.querySelectorAll('.pin-key').forEach(btn => {
