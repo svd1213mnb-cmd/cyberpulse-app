@@ -40,6 +40,10 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .search{padding:6px 14px 4px;position:relative}
 .search input{width:100%;background:rgba(12,16,28,.5);border:1px solid var(--line);border-radius:14px;padding:10px 14px 10px 38px;color:var(--text)}
 .search:before{content:'⌕';position:absolute;left:24px;top:15px;color:var(--muted);font-size:16px}
+/* ВОЗВРАЩАЕМ ФИЛЬТРЫ */
+.folders-bar{display:flex;gap:6px;padding:6px 14px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.folder-chip{padding:5px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:700 11px 'JetBrains Mono';cursor:pointer;white-space:nowrap;transition:all .2s}
+.folder-chip.active{background:var(--grad);color:#03050a;border-color:transparent}
 .clist{flex:1;overflow-y:auto;padding:0 10px 10px}
 .citem{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;cursor:pointer;transition:all .2s;border:1px solid transparent}
 .citem:hover,.citem.sel{background:var(--panel2);border-color:var(--line2)}
@@ -138,6 +142,16 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 </div>
 </div>
 <div class="search"><input id="list-search" placeholder="Поиск..." autocomplete="off" /></div>
+
+<!-- ВОЗВРАЩАЕМ ФИЛЬТРЫ В HTML -->
+<div class="folders-bar" id="folders-bar">
+  <div class="folder-chip active" data-folder="all">Все</div>
+  <div class="folder-chip" data-folder="dm">Личные</div>
+  <div class="folder-chip" data-folder="group">Группы</div>
+  <div class="folder-chip" data-folder="channel">Каналы</div>
+  <div class="folder-chip" data-folder="unread">Непрочитанные</div>
+</div>
+
 <div class="clist" id="dynamic-list"></div>
 </aside>
 <section class="ws">
@@ -218,6 +232,7 @@ const LocalDB = {
 
 async function getChatKey(chatId, otherUid){
   try {
+    if (!otherUid || otherUid === user.uid) throw new Error('self');
     const privKey = await LocalDB.get('keys', 'priv_'+user.uid);
     const peerPubB64 = users[otherUid]?.pubKey; if(!peerPubB64) throw new Error('no pub');
     const peerPubKey = await crypto.subtle.importKey("raw", Uint8Array.from(atob(peerPubB64), c => c.charCodeAt(0)), {name:"ECDH",namedCurve:"P-256"}, true, []);
@@ -247,7 +262,7 @@ let app=null, auth=null, db=null, user=null;
 let profile={username:''};
 let chats=[], messages=[], users={};
 let currentChatId='global', registerMode=false;
-let ctxMsgId=null;
+let ctxMsgId=null, currentFolder='all';
 
 function initFirebase() {
   app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.database();
@@ -284,22 +299,47 @@ function initFirebase() {
 
 function renderList() {
   const box = $('dynamic-list'); box.innerHTML = '';
-  chats.forEach(c => {
+  
+  const savedChatId = 'dm_' + [user.uid, user.uid].sort().join('_');
+  let filtered = [...chats];
+
+  // Фильтрация по папкам
+  if(currentFolder === 'dm') filtered = filtered.filter(c => c.type === 'dm');
+  else if(currentFolder === 'group') filtered = filtered.filter(c => c.type === 'group');
+  else if(currentFolder === 'channel') filtered = filtered.filter(c => c.type === 'channel' || c.id === 'global');
+  else if(currentFolder === 'unread') filtered = filtered.filter(c => (c.unreadCounts?.[user.uid] || 0) > 0);
+
+  // Всегда показываем "Избранное" в "Все" и "Личные"
+  if(currentFolder === 'all' || currentFolder === 'dm') {
+    box.innerHTML += `<button class="citem ${savedChatId===currentChatId?'sel':''}" onclick="window.openChat('${savedChatId}')">
+      <span class="cav" style="background:var(--grad);color:#000">⭐</span>
+      <span class="ccopy"><span class="ct"><span class="ct-name">Избранное</span></span><span class="cp"><span class="cp-text">Сохраненные заметки</span></span></span>
+    </button>`;
+  }
+
+  filtered.forEach(c => {
+    if(c.id === savedChatId) return;
     const title = c.title || (c.type==='dm' ? 'DM' : 'GLOBAL');
+    const unread = c.unreadCounts?.[user.uid] || 0;
+    const badge = unread > 0 ? `<span style="background:var(--acc2);color:#000;padding:1px 6px;border-radius:10px;font:800 10px 'JetBrains Mono'">${unread}</span>` : '';
+    
     box.innerHTML += `<button class="citem ${c.id===currentChatId?'sel':''}" onclick="window.openChat('${c.id}')">
       <span class="cav">#</span>
-      <span class="ccopy"><span class="ct"><span class="ct-name">${safe(title)}</span></span><span class="cp"><span class="cp-text">${safe(c.preview||'Нет сообщений')}</span></span></span>
+      <span class="ccopy">
+        <span class="ct"><span class="ct-name">${safe(title)}</span></span>
+        <span class="cp"><span class="cp-text">${safe(c.preview||'Нет сообщений')}</span>${badge}</span>
+      </span>
     </button>`;
   });
 }
 
 window.openChat = function(id) {
   currentChatId = id; $('app').classList.add('chat-open');
-  $('chat-title').textContent = chats.find(c=>c.id===id)?.title || 'GLOBAL_NET';
+  $('chat-title').textContent = chats.find(c=>c.id===id)?.title || (id.includes('dm_') && id.split('_')[1] === id.split('_')[2] ? 'Избранное' : 'GLOBAL_NET');
   messages = []; $('messages').innerHTML = '';
   
   const disp = chats.find(c=>c.id===id);
-  const otherUid = disp?.members ? Object.keys(disp.members).find(u=>u!==user.uid) : null;
+  const otherUid = disp?.members ? Object.keys(disp.members).find(u=>u!==user.uid) : (id.includes('dm_') ? id.split('_')[2] : null);
 
   db.ref(`chats/${id}/messages`).limitToLast(50).on('child_added', async snap => {
     const val = snap.val();
@@ -308,12 +348,6 @@ window.openChat = function(id) {
       messages.push(val); messages.sort((a,b)=>a.createdAt-b.createdAt); renderChat();
     }
   });
-
-  db.ref(`chats/${id}/messages`).on('child_changed', snap => {
-    const val = snap.val();
-    const idx = messages.findIndex(m => m.id === val.id);
-    if (idx !== -1) { messages[idx] = { ...messages[idx], ...val }; renderChat(); }
-  });
 };
 
 async function sendMessage(){
@@ -321,7 +355,8 @@ async function sendMessage(){
   input.value = ''; $('ai-chips').classList.remove('show');
   
   const disp = chats.find(c=>c.id===currentChatId);
-  const otherUid = disp?.members ? Object.keys(disp.members).find(u=>u!==user.uid) : null;
+  let otherUid = disp?.members ? Object.keys(disp.members).find(u=>u!==user.uid) : null;
+  if(!otherUid && currentChatId.includes('dm_')) otherUid = currentChatId.split('_')[2];
   
   const msgId = idgen('msg');
   const encText = await encryptText(txt, currentChatId, otherUid);
@@ -448,7 +483,7 @@ $('bookmarks-btn').onclick = async () => {
   openModal(html);
 };
 
-// === ИСПРАВЛЕННЫЕ ФУНКЦИИ МОДАЛЬНОГО ОКНА ===
+// ИСПРАВЛЕННЫЕ ФУНКЦИИ МОДАЛЬНОГО ОКНА (с кнопкой закрытия)
 function openModal(html) { 
   $('dialog').innerHTML = `
     <button class="ibtn" style="position:absolute;top:15px;right:15px;z-index:100;color:var(--text);background:var(--panel);" onclick="window.closeModal()">✕</button>
@@ -466,6 +501,16 @@ $('modal').onclick = (e) => {
 $('send-button').onclick = sendMessage;
 $('message-input').onkeydown = e => { if(e.key === 'Enter') sendMessage(); };
 $('back').onclick = () => $('app').classList.remove('chat-open');
+
+// Обработчики для возвращенных фильтров
+document.querySelectorAll('.folder-chip').forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll('.folder-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFolder = chip.dataset.folder;
+    renderList();
+  };
+});
 
 let enteredPin = '';
 document.querySelectorAll('.pin-key').forEach(btn => {
