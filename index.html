@@ -41,15 +41,15 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .search input{width:100%;background:rgba(12,16,28,.5);border:1px solid var(--line);border-radius:14px;padding:10px 14px 10px 38px;color:var(--text)}
 .search:before{content:'⌕';position:absolute;left:24px;top:15px;color:var(--muted);font-size:16px}
 .clist{flex:1;overflow-y:auto;padding:0 10px 10px}
-.citem{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;cursor:pointer;transition:all .2s}
-.citem:hover,.citem.sel{background:var(--panel2);border:1px solid var(--line2)}
+.citem{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;cursor:pointer;transition:all .2s;border:1px solid transparent}
+.citem:hover,.citem.sel{background:var(--panel2);border-color:var(--line2)}
 .cav{width:42px;height:42px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font:800 15px 'JetBrains Mono';color:var(--acc2);flex:none}
 .ccopy{flex:1;min-width:0;text-align:left}
 .ct{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
 .ct-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:3px}
 .cp-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.chead{min-height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--panel)}
+.chead{min-height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--panel);z-index:10}
 .ctitle{font:800 15px 'JetBrains Mono';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ibtn{width:36px;height:36px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);display:grid;place-items:center;font-size:15px;transition:all .2s}
 .ibtn:hover{color:var(--text);border-color:var(--line2);transform:scale(1.04)}
@@ -73,7 +73,6 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 .ai-chips{display:flex;gap:8px;padding:8px 14px;overflow-x:auto;border-top:1px solid var(--line);background:var(--panel);display:none}
 .ai-chips.show{display:flex}
 .ai-chip{background:var(--panel2);border:1px solid var(--acc1);border-radius:12px;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap;color:var(--text)}
-.ai-chip:hover{background:var(--line2)}
 .ctx-menu{position:fixed;z-index:3000;background:var(--panel2);border:1px solid var(--line2);border-radius:16px;padding:6px;box-shadow:0 20px 60px rgba(0,0,0,.8);display:none;flex-direction:column;min-width:180px}
 .ctx-menu.show{display:flex}
 .ctx-btn{padding:10px 14px;text-align:left;font-size:13px;border-radius:10px;display:flex;gap:10px;color:var(--text)}
@@ -101,21 +100,19 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
  .app{display:block;padding:0}
  .side,.ws{position:absolute;inset:0;border-radius:0;border:0}
  .side{z-index:2;transition:transform .3s ease}
- .ws{z-index:1;transform:translateX(100%);opacity:0;transition:transform .3s ease}
- .app.chat-open .side{transform:translateX(-100%)}.app.chat-open .ws{transform:translateX(0);opacity:1}
+ .ws{z-index:1;transform:translateX(100%);opacity:0;transition:transform .3s ease;display:flex;flex-direction:column;}
+ .app.chat-open .side{transform:translateX(-100%)}
+ .app.chat-open .ws{transform:translateX(0);opacity:1}
  .back{display:grid}
 }
 </style>
 </head>
 <body>
 
-<!-- Экран PIN-кода -->
 <div class="pin-screen" id="pin-screen">
   <div style="font-size:40px;margin-bottom:20px">🔒</div>
   <div style="font:800 18px 'JetBrains Mono';color:var(--text)">ВВЕДИТЕ PIN-КОД</div>
-  <div class="pin-dots" id="pin-dots">
-    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
-  </div>
+  <div class="pin-dots" id="pin-dots"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
   <div class="pin-pad" id="pin-pad">
     <button class="pin-key" data-key="1">1</button><button class="pin-key" data-key="2">2</button><button class="pin-key" data-key="3">3</button>
     <button class="pin-key" data-key="4">4</button><button class="pin-key" data-key="5">5</button><button class="pin-key" data-key="6">6</button>
@@ -188,25 +185,20 @@ button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;bo
 (() => {
 'use strict';
 
-// ========== КОНФИГ ==========
 const firebaseConfig = {apiKey:"AIzaSyCOwnNn1MdC-JB2iwgv4PuuciqPHDR8EqA",authDomain:"cyberpulse-b5ca4.firebaseapp.com",databaseURL:"https://cyberpulse-b5ca4-default-rtdb.firebaseio.com",projectId:"cyberpulse-b5ca4",storageBucket:"cyberpulse-b5ca4.firebasestorage.app",messagingSenderId:"640950603280",appId:"1:640950603280:web:1db07a551a79c5ce274495"};
-const RENDER_URL = "https://cyberpulse-rlu7.onrender.com/api/signature";
 
 const $ = id => document.getElementById(id);
 const safe = (v='') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nowTime = ts => new Date(ts||Date.now()).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 const idgen = p => `${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
-const dmChatId = (a,b) => 'dm_' + [a,b].sort().join('_');
 
 let toastT=null;
 function toast(t){ const el=$('toast'); el.textContent=t; el.classList.remove('hidden'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.add('hidden'),3000); }
 
-// ========== НАСТРОЙКИ ==========
 const settings = JSON.parse(localStorage.getItem('cp-settings')) || { geminiKey: '', pin: '', bubbleColor: '' };
 function saveSettings() { localStorage.setItem('cp-settings', JSON.stringify(settings)); }
 if(settings.bubbleColor) document.documentElement.style.setProperty('--my-bubble', settings.bubbleColor);
 
-// ========== БАЗА (INDEXEDDB) ==========
 const LocalDB = {
   dbPromise: new Promise((res, rej) => {
     const req = indexedDB.open('cyberpulse_v28', 3);
@@ -223,7 +215,6 @@ const LocalDB = {
   async getAll(store) { const db=await this.dbPromise; return new Promise(res=>{ const tx=db.transaction(store,'readonly'); const r=tx.objectStore(store).getAll(); r.onsuccess=()=>res(r.result); }); }
 };
 
-// ========== ШИФРОВАНИЕ ==========
 async function getChatKey(chatId, otherUid){
   try {
     const privKey = await LocalDB.get('keys', 'priv_'+user.uid);
@@ -251,26 +242,24 @@ async function decryptText(b64, chatId, otherUid){
   } catch(e){ return '[X]'; }
 }
 
-// ========== СОСТОЯНИЕ ==========
 let app=null, auth=null, db=null, user=null;
-let profile={username:'',avatarUrl:''};
+let profile={username:''};
 let chats=[], messages=[], users={};
 let currentChatId='global', registerMode=false;
 let ctxMsgId=null;
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
 function initFirebase() {
   app = firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.database();
   auth.onAuthStateChanged(async u => {
     if(u) {
       user = u; $('auth-screen').classList.add('hidden');
       
-      // Генерация ключей (упрощенно для демо)
+      // ИСПРАВЛЕНО: u.uid вместо uid
       if(!(await LocalDB.get('keys', 'priv_'+u.uid))) {
         const kp = await crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"}, false, ["deriveKey","deriveBits"]);
         await LocalDB.set('keys', 'priv_'+u.uid, kp.privateKey);
         const pubRaw = await crypto.subtle.exportKey("raw", kp.publicKey);
-        await db.ref(`usersPublic/${uid}/pubKey`).set(btoa(String.fromCharCode.apply(null, new Uint8Array(pubRaw))));
+        await db.ref(`usersPublic/${u.uid}/pubKey`).set(btoa(String.fromCharCode.apply(null, new Uint8Array(pubRaw))));
       }
 
       const snap = await db.ref('usersPublic/'+u.uid).once('value');
@@ -284,7 +273,6 @@ function initFirebase() {
       });
       db.ref('usersPublic').on('value', s => { users = s.val()||{}; });
       
-      // Если установлен PIN, блокируем экран
       if(settings.pin) $('pin-screen').classList.add('show');
       
       openChat('global');
@@ -294,7 +282,6 @@ function initFirebase() {
   });
 }
 
-// ========== РЕНДЕР СПИСКА ЧАТОВ ==========
 function renderList() {
   const box = $('dynamic-list'); box.innerHTML = '';
   chats.forEach(c => {
@@ -306,7 +293,6 @@ function renderList() {
   });
 }
 
-// ========== ОТКРЫТИЕ ЧАТА ==========
 window.openChat = function(id) {
   currentChatId = id; $('app').classList.add('chat-open');
   $('chat-title').textContent = chats.find(c=>c.id===id)?.title || 'GLOBAL_NET';
@@ -323,7 +309,6 @@ window.openChat = function(id) {
     }
   });
 
-  // READ RECEIPTS (Обновление статуса прочтения)
   db.ref(`chats/${id}/messages`).on('child_changed', snap => {
     const val = snap.val();
     const idx = messages.findIndex(m => m.id === val.id);
@@ -331,7 +316,6 @@ window.openChat = function(id) {
   });
 };
 
-// ========== ОТПРАВКА ==========
 async function sendMessage(){
   const input = $('message-input'); const txt = input.value.trim(); if(!txt) return;
   input.value = ''; $('ai-chips').classList.remove('show');
@@ -349,7 +333,6 @@ async function sendMessage(){
   await db.ref(`chatMeta/${currentChatId}`).update({ preview: txt.slice(0,60), lastMessageAt: msgData.createdAt });
 }
 
-// ========== РЕНДЕР СООБЩЕНИЙ ==========
 function renderChat() {
   const box = $('messages'); const isBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
   box.innerHTML = '';
@@ -372,7 +355,6 @@ function renderChat() {
   
   if(isBottom) box.scrollTop = box.scrollHeight;
   
-  // Инициализация Leaflet карт
   messages.filter(m=>m.geo).forEach(m=>{
     const el = document.getElementById(`map_${m.id}`);
     if(el && !el._leaflet_id) {
@@ -382,7 +364,6 @@ function renderChat() {
     }
   });
   
-  // Контекстное меню
   box.querySelectorAll('.msg').forEach(el => {
     el.oncontextmenu = (e) => { e.preventDefault(); openCtx(e, el.dataset.id); };
     let pressTimer;
@@ -391,7 +372,6 @@ function renderChat() {
   });
 }
 
-// ========== КОНТЕКСТНОЕ МЕНЮ ==========
 function openCtx(e, id) {
   ctxMsgId = id;
   const menu = $('ctx-menu');
@@ -410,19 +390,14 @@ window.ctxAction = async (act) => {
   const msg = messages.find(m=>m.id === ctxMsgId); if(!msg) return;
   
   if(act === 'copy') { navigator.clipboard.writeText(msg.text); toast('Скопировано'); }
-  if(act === 'bookmark') {
-    await LocalDB.set('bookmarks', msg.id, msg);
-    toast('Добавлено в закладки');
-  }
+  if(act === 'bookmark') { await LocalDB.set('bookmarks', msg.id, msg); toast('Добавлено в закладки'); }
   if(act === 'delete') { await db.ref(`chats/${currentChatId}/messages/${ctxMsgId}`).remove(); toast('Удалено'); }
 };
 
-// ========== УМНЫЕ ОТВЕТЫ (AI) ==========
 $('ai-reply-btn').onclick = async () => {
   if(!settings.geminiKey) return toast('Укажите Gemini Key в настройках ⚙');
   if(messages.length === 0) return;
   toast('✨ AI думает...');
-  
   const lastMsgs = messages.slice(-3).map(m=>m.text).join('\n');
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiKey}`, {
@@ -431,7 +406,6 @@ $('ai-reply-btn').onclick = async () => {
     const data = await res.json();
     const text = data.candidates[0].content.parts[0].text;
     const options = text.split('|').map(s=>s.trim()).filter(s=>s).slice(0,3);
-    
     const chips = $('ai-chips'); chips.innerHTML = '';
     options.forEach(opt => {
       const btn = document.createElement('div'); btn.className = 'ai-chip'; btn.textContent = opt;
@@ -442,15 +416,14 @@ $('ai-reply-btn').onclick = async () => {
   } catch(e) { toast('AI ошибка'); }
 };
 
-// ========== НАСТРОЙКИ (UI) ==========
 $('settings-open').onclick = () => {
   openModal(`
     <div style="font:800 16px 'JetBrains Mono';margin-bottom:15px">НАСТРОЙКИ</div>
-    <label class="field-label">GEMINI API KEY</label>
+    <label style="font:800 10px 'JetBrains Mono';color:var(--muted)">GEMINI API KEY</label>
     <input class="field" id="set-gemini" value="${settings.geminiKey}">
-    <label class="field-label">ЦВЕТ МОИХ СООБЩЕНИЙ</label>
+    <label style="font:800 10px 'JetBrains Mono';color:var(--muted)">ЦВЕТ МОИХ СООБЩЕНИЙ</label>
     <input type="color" class="field" id="set-color" value="${settings.bubbleColor || '#818cf8'}" style="height:50px;padding:5px">
-    <label class="field-label">PIN-КОД (4 цифры)</label>
+    <label style="font:800 10px 'JetBrains Mono';color:var(--muted)">PIN-КОД (4 цифры)</label>
     <input class="field" id="set-pin" type="password" maxlength="4" value="${settings.pin}">
     <button class="btn primary" style="width:100%;margin-top:15px" onclick="window.saveSet()">СОХРАНИТЬ</button>
   `);
@@ -465,7 +438,6 @@ window.saveSet = () => {
   closeModal(); toast('Сохранено');
 };
 
-// ========== ЗАКЛАДКИ ==========
 $('bookmarks-btn').onclick = async () => {
   const bms = await LocalDB.getAll('bookmarks');
   let html = `<div style="font:800 16px 'JetBrains Mono';margin-bottom:15px">🔖 ЗАКЛАДКИ</div>`;
@@ -476,7 +448,6 @@ $('bookmarks-btn').onclick = async () => {
   openModal(html);
 };
 
-// ========== БАЗОВЫЕ ФУНКЦИИ ==========
 function openModal(html) { $('dialog').innerHTML = html; $('modal').classList.add('show'); }
 function closeModal() { $('modal').classList.remove('show'); }
 window.closeModal = closeModal;
@@ -485,7 +456,6 @@ $('send-button').onclick = sendMessage;
 $('message-input').onkeydown = e => { if(e.key === 'Enter') sendMessage(); };
 $('back').onclick = () => $('app').classList.remove('chat-open');
 
-// PIN-код логика
 let enteredPin = '';
 document.querySelectorAll('.pin-key').forEach(btn => {
   btn.onclick = () => {
@@ -500,7 +470,6 @@ document.querySelectorAll('.pin-key').forEach(btn => {
   };
 });
 
-// Вход/Регистрация
 $('auth-toggle-mode').onclick = () => { registerMode = !registerMode; $('callsign-wrap').classList.toggle('hidden', !registerMode); };
 $('auth-submit').onclick = async () => {
   const email = $('auth-email').value, pass = $('auth-password').value;
