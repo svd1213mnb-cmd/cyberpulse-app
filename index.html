@@ -210,6 +210,19 @@ let toastT=null;
 function toast(t){ const el=$('toast'); el.textContent=t; el.classList.remove('hidden'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.add('hidden'),3000); }
 
 const settings = JSON.parse(localStorage.getItem('cp-settings')) || { geminiKey: '', pin: '', bubbleColor: '' };
+ // === ПЕРЕКЛЮЧЕНИЕ ТЕМ ===
+const themes = ['cyan', 'matrix', 'light'];
+let currentTheme = localStorage.getItem('cp-theme') || 'cyan';
+document.documentElement.dataset.theme = currentTheme;
+
+$('theme-toggle').onclick = () => {
+  let idx = themes.indexOf(currentTheme);
+  currentTheme = themes[(idx + 1) % themes.length];
+  document.documentElement.dataset.theme = currentTheme;
+  localStorage.setItem('cp-theme', currentTheme);
+  toast(`Тема: ${currentTheme.toUpperCase()}`);
+};
+// ========================
 function saveSettings() { localStorage.setItem('cp-settings', JSON.stringify(settings)); }
 if(settings.bubbleColor) document.documentElement.style.setProperty('--my-bubble', settings.bubbleColor);
 
