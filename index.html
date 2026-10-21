@@ -865,6 +865,7 @@
         gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+      }
       },
       playCallStart() {
         if (!this.isEnabled()) return; this.init();
@@ -875,6 +876,7 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+        }
       },
       playCallEnd() {
         if (!this.isEnabled()) return; this.init();
