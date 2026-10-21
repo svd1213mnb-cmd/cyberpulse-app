@@ -821,9 +821,9 @@
           utterance.pitch = 0.8; // Тон (пониже, для эффекта робота)
           
           window.speechSynthesis.speak(utterance);
-        }
+        },
       
-       },
+       
       isEnabled() {
         const s = loadSettings();
         return s.sounds !== false; // Если галочка стоит, звук включен
