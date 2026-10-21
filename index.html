@@ -1019,14 +1019,21 @@
 
       const currentMsgs = state.messages[state.activeChatId] || [];
       
-           currentMsgs.forEach(msg => {
-        // Ставим таймер на перерисовку, если сообщение секретное
+                 currentMsgs.forEach(msg => {
+        // Если сообщение секретное
         if (msg.secret && msg.expiresAt) {
           const timeLeft = msg.expiresAt - Date.now();
-          if (timeLeft > 0) {
+          
+          if (timeLeft <= 0) {
+            return; // <--- ВОТ ЭТО УДАЛЯЕТ СООБЩЕНИЕ (пропускает его отрисовку)
+          } else {
+            // Если время еще есть, ставим таймер на перерисовку
             setTimeout(() => renderMessages(), timeLeft + 100);
           }
         }
+
+        const wrap = document.createElement('div'); 
+        // ... дальше твой старый код
 
         const wrap = document.createElement('div'); 
         // ... дальше твой старый код отрисовки wrap ...
@@ -1538,7 +1545,16 @@ if (chatForm) {
           SoundEngine.playError();
           return;
         }
-        const newMsg = { id: uid(), sender: state.currentUser, text: text || '', timestamp: Date.now(), isSelf: true, reactions: {} };
+               const newMsg = { 
+          id: uid(), 
+          sender: state.currentUser, 
+          text: text || '', 
+          timestamp: Date.now(), 
+          isSelf: true, 
+          reactions: {},
+          secret: state.secretMode, // <--- Добавили флаг
+          expiresAt: state.secretMode ? Date.now() + 10000 : null // <--- Добавили таймер на 10 сек
+        };
         if (state.replyTo) { newMsg.replyTo = { id: state.replyTo.id, sender: state.replyTo.sender, text: state.replyTo.text }; cancelReply(); }
         if (state.pendingAttachment) { newMsg.media = { ...state.pendingAttachment }; state.pendingAttachment = null; document.getElementById('attachmentPreview')?.classList.add('hidden'); }
         if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = [];
@@ -1601,6 +1617,15 @@ if (chatForm) {
         saveState(); 
         broadcastTyping(false); // Отключаем статус "печатает..."
 SoundEngine.playTransmit();
+        // Сброс режима бомбы после отправки
+        if (state.secretMode) {
+          state.secretMode = false;
+          const secretBtn = document.getElementById('secretMsgBtn');
+          if (secretBtn) {
+            secretBtn.classList.remove('text-red-500', 'animate-pulse');
+            secretBtn.classList.add('text-slate-400');
+          }
+        }
       });
     }
 
