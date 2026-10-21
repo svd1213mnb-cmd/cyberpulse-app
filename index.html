@@ -99,7 +99,7 @@
     .msg-bubble-self { background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(59, 130, 246, 0.35)); border: 1px solid var(--primary-neon); box-shadow: 0 0 16px var(--primary-glow); border-bottom-right-radius: 4px; }
     .msg-bubble-other { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(148, 163, 184, 0.25); border-bottom-left-radius: 4px; }
     
-    /* Мобильные пузыри (упрощенные, как в TG) */
+    /* Мобильные пузыри (упрощенные) */
     @media (max-width: 768px) {
       .msg-bubble-self { background: #2b5278; border: none; box-shadow: none; border-radius: 16px; border-bottom-right-radius: 4px; }
       .msg-bubble-other { background: #182533; border: none; box-shadow: none; border-radius: 16px; border-bottom-left-radius: 4px; }
@@ -941,57 +941,63 @@
             vid.controls = true; 
             loadMediaInto(vid, msg.media.id, 'video'); 
             mediaDiv.appendChild(vid); 
-         } else if (msg.media.type === 'audio') { 
-  const w = document.createElement('div'); 
-  w.className = 'custom-audio'; // Используем новый класс
-  
-  const btn = document.createElement('button');
-  btn.innerHTML = '<i class="fas fa-play"></i>';
-  
-  const track = document.createElement('div');
-  track.className = 'progress-track';
-  const fill = document.createElement('div');
-  fill.className = 'progress-fill';
-  track.appendChild(fill);
-  
-  const time = document.createElement('span');
-  time.className = 'time-display';
-  time.textContent = '0:00';
-  
-  const aud = document.createElement('audio');
-  aud.className = 'hidden'; // Скрываем стандартный плеер
-  loadMediaInto(aud, msg.media.id, 'audio');
-  
-  // Логика кастомного плеера
-  btn.onclick = () => {
-    if (aud.paused) { aud.play(); btn.innerHTML = '<i class="fas fa-pause"></i>'; }
-    else { aud.pause(); btn.innerHTML = '<i class="fas fa-play"></i>'; }
-  };
-  
-  aud.onended = () => { btn.innerHTML = '<i class="fas fa-play"></i>'; fill.style.width = '0%'; };
-  
-  aud.ontimeupdate = () => {
-    if (aud.duration) {
-      const percent = (aud.currentTime / aud.duration) * 100;
-      fill.style.width = percent + '%';
-      const m = Math.floor(aud.currentTime / 60);
-      const s = Math.floor(aud.currentTime % 60);
-      time.textContent = `${m}:${String(s).padStart(2, '0')}`;
-    }
-  };
-  
-  track.onclick = (e) => {
-    const rect = track.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    if (aud.duration) aud.currentTime = pos * aud.duration;
-  };
+                 } else if (msg.media.type === 'audio') { 
+          const w = document.createElement('div'); 
+          w.className = 'custom-audio';
+          
+          const btn = document.createElement('button');
+          btn.innerHTML = '<i class="fas fa-play"></i>';
+          
+          const track = document.createElement('div');
+          track.className = 'progress-track';
+          const fill = document.createElement('div');
+          fill.className = 'progress-fill';
+          track.appendChild(fill);
+          
+          const time = document.createElement('span');
+          time.className = 'time-display';
+          time.textContent = '0:00';
+          
+          const aud = document.createElement('audio');
+          aud.className = 'hidden';
+          loadMediaInto(aud, msg.media.id, 'audio');
+          
+          btn.onclick = () => {
+            if (aud.paused) { 
+              aud.play(); 
+              btn.innerHTML = '<i class="fas fa-pause"></i>'; 
+            } else { 
+              aud.pause(); 
+              btn.innerHTML = '<i class="fas fa-play"></i>'; 
+            }
+          };
+          
+          aud.onended = () => { 
+            btn.innerHTML = '<i class="fas fa-play"></i>'; 
+            fill.style.width = '0%'; 
+          };
+          
+          aud.ontimeupdate = () => {
+            if (aud.duration) {
+              const percent = (aud.currentTime / aud.duration) * 100;
+              fill.style.width = percent + '%';
+              const m = Math.floor(aud.currentTime / 60);
+              const s = Math.floor(aud.currentTime % 60);
+              time.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+            }
+          };
+          
+          track.onclick = (e) => {
+            const rect = track.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            if (aud.duration) aud.currentTime = pos * aud.duration;
+          };
 
-  w.appendChild(btn);
-  w.appendChild(track);
-  w.appendChild(time);
-  w.appendChild(aud);
-  mediaDiv.appendChild(w); 
-}
+          w.appendChild(btn);
+          w.appendChild(track);
+          w.appendChild(time);
+          w.appendChild(aud);
+          mediaDiv.appendChild(w); 
           } else if (msg.media.type === 'video-note') { 
             const circle = document.createElement('div'); 
             circle.className = 'video-note-bubble'; 
