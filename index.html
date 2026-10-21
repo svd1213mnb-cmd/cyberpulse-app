@@ -309,7 +309,7 @@
     }
   </style>
 </head>
-<body class="h-screen flex flex-col relative select-none">
+<body class="h-[100dvh] flex flex-col relative select-none">
 
   <!-- Matrix Canvas -->
   <canvas id="matrixCanvas"></canvas>
@@ -362,7 +362,7 @@
       <div class="flex items-center space-x-3 overflow-hidden">
         <i class="fas fa-thumbtack text-cyan-400 animate-bounce"></i>
         <div class="truncate cursor-pointer" id="pinnedBannerText">
-          <span class="font-bold text-cyan-400">PINNED MSG:</span> <span id="pinnedBannerContent">System initialization complete.</span>
+          <span id="pinnedPrefix" class="font-bold text-cyan-400">PINNED MSG:</span> <span id="pinnedBannerContent">System initialization complete.</span>
         </div>
       </div>
       <button id="unpinBtn" class="text-slate-400 hover:text-white p-1 ml-2"><i class="fas fa-times"></i></button>
@@ -377,8 +377,8 @@
         <!-- STORIES -->
         <div class="p-3 border-b border-slate-800 bg-slate-950/40">
           <div class="text-[11px] font-bold tracking-wider text-slate-400 mb-2 flex justify-between items-center">
-            <span>NETWORK STORIES</span>
-            <button id="addStoryBtn" class="text-xs text-cyan-400 hover:underline"><i class="fas fa-plus"></i> ADD</button>
+            <span id="storiesTitle">NETWORK STORIES</span>
+            <button id="addStoryBtn" class="text-xs text-cyan-400 hover:underline"><i class="fas fa-plus"></i> <span id="addStoryLabel">ADD</span></button>
           </div>
           <div id="storiesContainer" class="flex space-x-3 overflow-x-auto pb-1">
             <!-- Dynamic -->
@@ -411,7 +411,7 @@
             </div>
             <div>
               <div id="userCallsign" class="text-xs font-bold text-slate-200 code-font">CALLSIGN_OPERATOR</div>
-              <div class="text-[10px] text-emerald-400 code-font">NODE_CONNECTED</div>
+              <div id="nodeStatus" class="text-[10px] text-emerald-400 code-font">NODE_CONNECTED</div>
             </div>
           </div>
           <button id="copyPublicKeyBtn" title="Copy Public Key" class="text-slate-400 hover:text-cyan-400 p-1.5 text-xs">
@@ -482,36 +482,37 @@
         <!-- REPLY BAR -->
         <div id="replyBar" class="items-center justify-between gap-3">
           <div class="flex-1 overflow-hidden">
-            <div class="text-cyan-400 text-[10px] font-bold">Отвечая <span id="replyToUser"></span></div>
+            <div class="text-cyan-400 text-[10px] font-bold"><span id="replyPrefix">Отвечая</span> <span id="replyToUser"></span></div>
             <div id="replyToText" class="text-slate-300 truncate text-[11px]"></div>
           </div>
           <button id="cancelReplyBtn" class="text-slate-400 hover:text-white p-1"><i class="fas fa-times"></i></button>
         </div>
 
         <!-- INPUT PANEL -->
-        <div class="p-3 md:p-4 border-t border-slate-800 bg-slate-950/90 shrink-0">
-          <form id="chatForm" class="flex items-center space-x-2">
-            <label class="p-2 text-slate-400 hover:text-cyan-400 cursor-pointer transition" title="Attach file">
-              <i class="fas fa-paperclip"></i>
-              <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.zip">
-            </label>
-            <button type="button" id="voiceRecordBtn" class="p-2 text-slate-400 hover:text-emerald-400 transition" title="Record voice message">
-              <i class="fas fa-microphone"></i>
-            </button>
-            <button type="button" id="videoNoteBtn" class="p-2 text-slate-400 hover:text-pink-400 transition" title="Record video note">
-              <i class="fas fa-circle-dot"></i>
-            </button>
-            <button type="button" id="emojiPickerBtn" class="p-2 text-slate-400 hover:text-amber-400 transition">
-              <i class="far fa-smile"></i>
-            </button>
-            <button type="button" id="createPollBtn" class="p-2 text-slate-400 hover:text-purple-400 transition" title="Create poll">
-              <i class="fas fa-poll-h"></i>
-            </button>
-            <input type="text" id="messageInput" placeholder="Transmit payload... (*bold*, _italic_, `code`)" autocomplete="off" class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 focus:outline-none focus:border-cyan-500 transition code-font">
-            <button type="submit" class="neon-button px-4 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center space-x-1.5 tracking-wider">
-              <span>TX</span>
-              <i class="fas fa-bolt text-xs"></i>
-            </button>
+        <div id="composer" class="p-2 md:p-4 border-t border-slate-800 bg-slate-950/90 shrink-0">
+          <form id="chatForm" class="flex flex-col gap-2">
+            <div class="flex items-center gap-1 overflow-x-auto">
+              <label class="p-2 text-slate-400 hover:text-cyan-400 cursor-pointer shrink-0" title="Attach file">
+                <i class="fas fa-paperclip"></i>
+                <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.zip">
+              </label>
+              <button type="button" id="voiceRecordBtn" class="p-2 text-slate-400 hover:text-emerald-400 shrink-0" title="Record voice message">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <button type="button" id="videoNoteBtn" class="p-2 text-slate-400 hover:text-pink-400 shrink-0" title="Record video note">
+                <i class="fas fa-circle-dot"></i>
+              </button>
+              <button type="button" id="emojiPickerBtn" class="p-2 text-slate-400 hover:text-amber-400 shrink-0">
+                <i class="far fa-smile"></i>
+              </button>
+              <button type="button" id="createPollBtn" class="p-2 text-slate-400 hover:text-purple-400 shrink-0" title="Create poll">
+                <i class="fas fa-poll-h"></i>
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="messageInput" enterkeyhint="send" placeholder="Transmit payload... (*bold*, _italic_, `code`)" autocomplete="off" class="min-w-0 flex-1 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-3 text-base text-slate-100 focus:outline-none focus:border-cyan-500 code-font select-text">
+              <button type="submit" id="sendBtn" class="neon-button shrink-0 h-12 px-4 rounded-lg text-sm font-bold tracking-wider">TX</button>
+            </div>
           </form>
         </div>
       </main>
@@ -521,12 +522,12 @@
         <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
           <div class="flex items-center space-x-2">
             <i class="fas fa-brain text-cyan-400 animate-pulse"></i>
-            <h3 class="font-bold text-xs tracking-wider text-slate-200">GEMINI_AI COMPANION</h3>
+            <h3 id="aiTitle" class="font-bold text-xs tracking-wider text-slate-200">GEMINI_AI COMPANION</h3>
           </div>
           <button id="closeAiDrawerBtn" class="text-slate-400 hover:text-white text-xs"><i class="fas fa-times"></i></button>
         </div>
         <div class="p-3 bg-cyan-950/20 border-b border-cyan-500/20 text-[11px] text-cyan-300 flex justify-between items-center">
-          <span>AI Chat Summarizer & Cyber Assistant</span>
+          <span id="aiSubtitle">AI Chat Summarizer & Cyber Assistant</span>
           <button id="summarizeChatBtn" class="px-2 py-0.5 rounded bg-cyan-600 text-black font-bold text-[10px]">SUMMARIZE</button>
         </div>
         <div id="aiFeed" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
@@ -538,7 +539,7 @@
         <div class="p-3 border-t border-slate-800 bg-slate-950">
           <form id="aiForm" class="flex space-x-2">
             <input type="text" id="aiInput" placeholder="Query Gemini AI..." class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 code-font">
-            <button type="submit" class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs">ASK</button>
+            <button type="submit" id="aiAskBtn" class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs">ASK</button>
           </form>
         </div>
       </aside>
@@ -566,7 +567,7 @@
   <div id="pollModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
     <div class="w-full max-w-md glass-panel p-6 rounded-xl border border-cyan-500/40 space-y-4">
       <h3 class="text-base font-bold text-cyan-400 flex items-center gap-2">
-        <i class="fas fa-poll-h"></i> CREATE MATRIX VOTING POLL
+        <i class="fas fa-poll-h"></i> <span id="pollTitle">CREATE MATRIX VOTING POLL</span>
       </h3>
       <input type="text" id="pollQuestion" placeholder="Enter poll question..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
       <input type="text" id="pollOpt1" placeholder="Option 1" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
@@ -677,18 +678,21 @@
   </div>
 
   <!-- Settings Modal -->
-  <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-    <div class="w-full max-w-md glass-panel p-6 rounded-2xl border border-cyan-500/40 space-y-5 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-        <h3 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
-          <i class="fas fa-sliders-h"></i> MATRIX NODE CONFIGURATION
+  <div id="settingsModal" class="hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/80 p-0 sm:p-4">
+    <div class="w-full max-w-md glass-panel rounded-t-2xl sm:rounded-2xl border border-cyan-500/40 max-h-[92vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-slate-800 px-4 py-3 shrink-0 sticky top-0 bg-[#0d111c]">
+        <h3 id="settingsTitle" class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+          <i class="fas fa-sliders-h"></i> <span id="settingsTitleText">MATRIX NODE CONFIGURATION</span>
         </h3>
-        <button id="closeSettingsBtn" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+        <button id="closeSettingsBtn" type="button" class="w-11 h-11 rounded-lg border border-slate-600 text-slate-200 text-lg flex items-center justify-center" aria-label="Close">
+          <i class="fas fa-times pointer-events-none"></i>
+        </button>
       </div>
+      <div class="p-4 space-y-5 overflow-y-auto">
 
       <!-- Display name -->
       <div>
-        <label class="text-xs text-slate-400 font-bold block mb-1">DISPLAY NAME</label>
+        <label id="labelDisplayName" class="text-xs text-slate-400 font-bold block mb-1">DISPLAY NAME</label>
         <input type="text" id="settingsDisplayName" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200" placeholder="Operator_XXX">
       </div>
 
@@ -705,7 +709,7 @@
 
       <!-- Theme -->
       <div>
-        <label class="text-xs text-slate-400 font-bold block mb-2">NEON COLOR THEME</label>
+        <label id="labelTheme" class="text-xs text-slate-400 font-bold block mb-2">NEON COLOR THEME</label>
         <div class="grid grid-cols-2 gap-2 text-xs">
           <button data-theme="cyan" class="theme-btn p-2 rounded bg-slate-900 border border-cyan-400 text-cyan-400 font-bold">CYAN NEON</button>
           <button data-theme="emerald" class="theme-btn p-2 rounded bg-slate-900 border border-emerald-400 text-emerald-400 font-bold">MATRIX EMERALD</button>
@@ -717,29 +721,29 @@
       <!-- Toggles -->
       <div class="space-y-2 pt-2 border-t border-slate-800">
         <label class="flex items-center justify-between text-xs text-slate-300">
-          <span>Matrix Rain</span>
+          <span id="labelMatrix">Matrix Rain</span>
           <input type="checkbox" id="settingsMatrixRain" class="accent-cyan-500" checked>
         </label>
         <label class="flex items-center justify-between text-xs text-slate-300">
-          <span>Reduced Motion</span>
+          <span id="labelMotion">Reduced Motion</span>
           <input type="checkbox" id="settingsReducedMotion" class="accent-cyan-500">
         </label>
         <label class="flex items-center justify-between text-xs text-slate-300">
-          <span>Sound Effects</span>
+          <span id="labelSounds">Sound Effects</span>
           <input type="checkbox" id="settingsSounds" class="accent-cyan-500" checked>
         </label>
       </div>
 
       <!-- Gemini Key -->
       <div class="pt-2 border-t border-slate-800">
-        <label class="text-xs text-slate-400 font-bold block mb-1">GEMINI API KEY</label>
+        <label id="labelGemini" class="text-xs text-slate-400 font-bold block mb-1">GEMINI API KEY</label>
         <input type="password" id="settingsGeminiKey" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200 code-font" placeholder="AIzaSy...">
-        <p class="text-[10px] text-slate-500 mt-1">Хранится только в localStorage. Получить: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400">aistudio.google.com</a></p>
+        <p id="geminiHint" class="text-[10px] text-slate-500 mt-1">Хранится только в localStorage. Получить: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400">aistudio.google.com</a></p>
       </div>
 
       <!-- Crypto -->
       <div class="pt-2 border-t border-slate-800">
-        <label class="text-xs text-slate-400 font-bold block mb-1">CRYPTO (obfuscation)</label>
+        <label id="labelCrypto" class="text-xs text-slate-400 font-bold block mb-1">CRYPTO (obfuscation)</label>
         <button id="regenKeysBtn" class="w-full p-2 rounded bg-slate-900 border border-red-500/50 text-red-400 text-xs font-mono">REGENERATE KEY PAIR</button>
       </div>
 
@@ -749,20 +753,21 @@
         <button id="clearAllDataBtn" class="w-full p-2 rounded bg-slate-900 border border-red-500/50 text-red-400 text-xs">Clear all data</button>
       </div>
 
-      <div class="text-[10px] text-slate-500 text-center pt-2">
+      <div class="text-[10px] text-slate-500 text-center pt-2 pb-6">
         CYBER_PULSE MATRIX v28.1 · Firebase Signaling Ready
+      </div>
       </div>
     </div>
   </div>
 
   <!-- Context Menu -->
   <div id="contextMenu" class="hidden absolute z-50 w-44 glass-panel rounded-lg py-1 shadow-2xl border border-cyan-500/40 text-xs font-semibold text-slate-200">
-    <button data-action="reply" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-reply mr-2"></i> Reply</button>
-    <button data-action="react" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-smile mr-2"></i> React</button>
-    <button data-action="pin" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-thumbtack mr-2"></i> Pin</button>
-    <button data-action="copy" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-copy mr-2"></i> Copy</button>
-    <button data-action="forward" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-share mr-2"></i> Forward</button>
-    <button data-action="delete" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 hover:text-red-400 border-t border-slate-800"><i class="fas fa-trash mr-2"></i> Delete</button>
+    <button data-action="reply" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-reply mr-2"></i><span id="ctxReply">Reply</span></button>
+    <button data-action="react" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-smile mr-2"></i><span id="ctxReact">React</span></button>
+    <button data-action="pin" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-thumbtack mr-2"></i><span id="ctxPin">Pin</span></button>
+    <button data-action="copy" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-copy mr-2"></i><span id="ctxCopy">Copy</span></button>
+    <button data-action="forward" class="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-share mr-2"></i><span id="ctxForward">Forward</span></button>
+    <button data-action="delete" class="w-full text-left px-3 py-1.5 hover:bg-red-500/20 hover:text-red-400 border-t border-slate-800"><i class="fas fa-trash mr-2"></i><span id="ctxDelete">Delete</span></button>
   </div>
 
   <!-- Quick Reactions Panel -->
@@ -784,7 +789,7 @@
   <!-- Forward Modal -->
   <div id="forwardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
     <div class="w-full max-w-sm glass-panel p-5 rounded-xl border border-cyan-500/40 space-y-3">
-      <h3 class="text-sm font-bold text-cyan-400">Forward to...</h3>
+      <h3 id="forwardTitle" class="text-sm font-bold text-cyan-400">Forward to...</h3>
       <div id="forwardChatList" class="max-h-60 overflow-y-auto space-y-1"></div>
       <button id="cancelForwardBtn" class="w-full py-1.5 rounded bg-slate-800 text-slate-300 text-xs">Cancel</button>
     </div>
@@ -825,60 +830,163 @@
        ========================================================================== */
     const i18n = {
       ru: {
-        send: 'TX', placeholder: 'Transmit payload... (*bold*, _italic_, `code`)',
-        channels: 'CHANNELS', dm: 'DIRECT (DM)', searchChats: 'Filter node channels or DMs...',
-        pinned: 'PINNED MSG:', typing: 'печатает...', aiGreet: 'Greetings Operator. Введи Gemini API key в настройках.',
-        settingsTitle: 'MATRIX NODE CONFIGURATION', displayName: 'DISPLAY NAME', language: 'INTERFACE LANGUAGE',
-        theme: 'NEON COLOR THEME', matrixRain: 'Matrix Rain', reducedMotion: 'Reduced Motion', sounds: 'Sound Effects',
-        geminiKey: 'GEMINI API KEY', exportChats: 'Export chats (JSON)', clearData: 'Clear all data',
-        voiceRec: 'Voice recording...', callWaiting: 'Waiting for peer... Share the link'
+        stories: "ИСТОРИИ СЕТИ", add: "ДОБАВИТЬ", channels: "КАНАЛЫ", dm: "ЛИЧНЫЕ",
+        searchChats: "Поиск каналов и личных...", searchMsgs: "Поиск по сообщениям...",
+        placeholder: "Передать сообщение... (*жирный*, _курсив_, `код`)",
+        pinned: "ЗАКРЕПЛЕНО:", reply: "Ответ",
+        node: "УЗЕЛ_ПОДКЛЮЧЁН", matches: "совпад.",
+        rec: "Запись...", stop: "СТОП", voice: "Голосовое...",
+        aiTitle: "GEMINI_AI КОМПАНЬОН", aiSub: "Сводка чата и кибер-ассистент", summarize: "СВОДКА", ask: "СПРОСИТЬ",
+        aiPlaceholder: "Запрос к Gemini...",
+        settingsTitle: "НАСТРОЙКИ УЗЛА", displayName: "ИМЯ", language: "ЯЗЫК ИНТЕРФЕЙСА",
+        theme: "НЕОНОВАЯ ТЕМА", matrixRain: "Дождь Matrix", reducedMotion: "Меньше анимации", sounds: "Звуки",
+        geminiKey: "КЛЮЧ GEMINI API", geminiHint: "Хранится только в браузере. Получить:",
+        crypto: "КРИПТО (обфускация)", regen: "СГЕНЕРИРОВАТЬ КЛЮЧИ ЗАНОВО",
+        exportChats: "Экспорт чатов (JSON)", clearData: "Очистить все данные",
+        ctxReply: "Ответить", ctxReact: "Реакция", ctxPin: "Закрепить", ctxCopy: "Копировать", ctxForward: "Переслать", ctxDelete: "Удалить",
+        forwardTitle: "Переслать в...", cancel: "Отмена",
+        pollTitle: "СОЗДАТЬ ОПРОС", pollQ: "Вопрос опроса...", opt1: "Вариант 1", opt2: "Вариант 2", launch: "ЗАПУСТИТЬ",
+        nothing: "Ничего не найдено", typing: "печатает...",
+        saved: "Настройки сохранены", copied: "Скопировано", forwarded: "Переслано"
       },
       en: {
-        send: 'TX', placeholder: 'Transmit payload... (*bold*, _italic_, `code`)',
-        channels: 'CHANNELS', dm: 'DIRECT (DM)', searchChats: 'Filter node channels or DMs...',
-        pinned: 'PINNED MSG:', typing: 'is typing...', aiGreet: 'Greetings Operator. Enter Gemini API key in settings.',
-        settingsTitle: 'MATRIX NODE CONFIGURATION', displayName: 'DISPLAY NAME', language: 'INTERFACE LANGUAGE',
-        theme: 'NEON COLOR THEME', matrixRain: 'Matrix Rain', reducedMotion: 'Reduced Motion', sounds: 'Sound Effects',
-        geminiKey: 'GEMINI API KEY', exportChats: 'Export chats (JSON)', clearData: 'Clear all data',
-        voiceRec: 'Voice recording...', callWaiting: 'Waiting for peer... Share the link'
+        stories: "NETWORK STORIES", add: "ADD", channels: "CHANNELS", dm: "DIRECT",
+        searchChats: "Filter channels or DMs...", searchMsgs: "Search messages...",
+        placeholder: "Transmit message... (*bold*, _italic_, `code`)",
+        pinned: "PINNED:", reply: "Replying to",
+        node: "NODE_ONLINE", matches: "matches",
+        rec: "Recording...", stop: "STOP", voice: "Voice note...",
+        aiTitle: "GEMINI_AI COMPANION", aiSub: "Chat summary and cyber assistant", summarize: "SUMMARIZE", ask: "ASK",
+        aiPlaceholder: "Query Gemini AI...",
+        settingsTitle: "NODE SETTINGS", displayName: "DISPLAY NAME", language: "INTERFACE LANGUAGE",
+        theme: "NEON THEME", matrixRain: "Matrix Rain", reducedMotion: "Reduced motion", sounds: "Sounds",
+        geminiKey: "GEMINI API KEY", geminiHint: "Stored only in this browser. Get one:",
+        crypto: "CRYPTO (obfuscation)", regen: "REGENERATE KEY PAIR",
+        exportChats: "Export chats (JSON)", clearData: "Clear all data",
+        ctxReply: "Reply", ctxReact: "React", ctxPin: "Pin", ctxCopy: "Copy", ctxForward: "Forward", ctxDelete: "Delete",
+        forwardTitle: "Forward to...", cancel: "Cancel",
+        pollTitle: "CREATE POLL", pollQ: "Poll question...", opt1: "Option 1", opt2: "Option 2", launch: "LAUNCH",
+        nothing: "Nothing found", typing: "is typing...",
+        saved: "Settings saved", copied: "Copied", forwarded: "Forwarded"
       },
       uk: {
-        send: 'TX', placeholder: 'Передати payload... (*bold*, _italic_, `code`)',
-        channels: 'КАНАЛИ', dm: 'ОСОБИСТІ', searchChats: 'Фільтр каналів або DM...',
-        pinned: 'ЗАКРІПЛЕНО:', typing: 'друкує...', aiGreet: 'Вітаю, Операторе. Введи Gemini API key у налаштуваннях.',
-        settingsTitle: 'КОНФІГУРАЦІЯ ВУЗЛА', displayName: 'ІМ\'Я', language: 'МОВА ІНТЕРФЕЙСУ',
-        theme: 'НЕОНОВА ТЕМА', matrixRain: 'Matrix дощ', reducedMotion: 'Зменшити рух', sounds: 'Звуки',
-        geminiKey: 'GEMINI API KEY', exportChats: 'Експорт чатів (JSON)', clearData: 'Очистити дані',
-        voiceRec: 'Запис голосу...', callWaiting: 'Очікування... Поділіться посиланням'
+        stories: "ІСТОРІЇ МЕРЕЖІ", add: "ДОДАТИ", channels: "КАНАЛИ", dm: "ОСОБИСТІ",
+        searchChats: "Пошук каналів і особистих...", searchMsgs: "Пошук у повідомленнях...",
+        placeholder: "Надіслати повідомлення... (*жирний*, _курсив_, `код`)",
+        pinned: "ЗАКРІПЛЕНО:", reply: "Відповідь",
+        node: "ВУЗОЛ_ОНЛАЙН", matches: "збігів",
+        rec: "Запис...", stop: "СТОП", voice: "Голосове...",
+        aiTitle: "GEMINI_AI КОМПАНЬЙОН", aiSub: "Підсумок чату та кібер-асистент", summarize: "ПІДСУМОК", ask: "ЗАПИТАТИ",
+        aiPlaceholder: "Запит до Gemini...",
+        settingsTitle: "НАЛАШТУВАННЯ ВУЗЛА", displayName: "ІМ'Я", language: "МОВА ІНТЕРФЕЙСУ",
+        theme: "НЕОНОВА ТЕМА", matrixRain: "Дощ Matrix", reducedMotion: "Менше анімації", sounds: "Звуки",
+        geminiKey: "КЛЮЧ GEMINI API", geminiHint: "Зберігається лише в браузері. Отримати:",
+        crypto: "КРИПТО (обфускація)", regen: "ЗГЕНЕРУВАТИ КЛЮЧІ ЗНОВУ",
+        exportChats: "Експорт чатів (JSON)", clearData: "Очистити всі дані",
+        ctxReply: "Відповісти", ctxReact: "Реакція", ctxPin: "Закріпити", ctxCopy: "Копіювати", ctxForward: "Переслати", ctxDelete: "Видалити",
+        forwardTitle: "Переслати в...", cancel: "Скасувати",
+        pollTitle: "СТВОРИТИ ОПИТУВАННЯ", pollQ: "Питання...", opt1: "Варіант 1", opt2: "Варіант 2", launch: "ЗАПУСТИТИ",
+        nothing: "Нічого не знайдено", typing: "друкує...",
+        saved: "Налаштування збережено", copied: "Скопійовано", forwarded: "Переслано"
       },
       de: {
-        send: 'TX', placeholder: 'Payload senden... (*bold*, _italic_, `code`)',
-        channels: 'KANÄLE', dm: 'DIREKT (DM)', searchChats: 'Kanäle oder DMs filtern...',
-        pinned: 'ANGEHEFTET:', typing: 'schreibt...', aiGreet: 'Begrüßung Operator. Gemini API-Schlüssel in Einstellungen eingeben.',
-        settingsTitle: 'MATRIX KNOTEN KONFIGURATION', displayName: 'ANZEIGENAME', language: 'SPRACHE',
-        theme: 'NEON FARBTHEMA', matrixRain: 'Matrix Regen', reducedMotion: 'Reduzierte Bewegung', sounds: 'Soundeffekte',
-        geminiKey: 'GEMINI API KEY', exportChats: 'Chats exportieren (JSON)', clearData: 'Alle Daten löschen',
-        voiceRec: 'Sprachaufnahme...', callWaiting: 'Warte auf Peer... Link teilen'
+        stories: "NETZWERK-STORIES", add: "HINZU", channels: "KANÄLE", dm: "DIREKT",
+        searchChats: "Kanäle oder DMs filtern...", searchMsgs: "Nachrichten suchen...",
+        placeholder: "Nachricht senden... (*fett*, _kursiv_, `code`)",
+        pinned: "ANGEHEFTET:", reply: "Antwort an",
+        node: "KNOTEN_ONLINE", matches: "Treffer",
+        rec: "Aufnahme...", stop: "STOPP", voice: "Sprachnachricht...",
+        aiTitle: "GEMINI_AI BEGLEITER", aiSub: "Chat-Zusammenfassung und Assistent", summarize: "ZUSAMMEN", ask: "FRAGEN",
+        aiPlaceholder: "Gemini fragen...",
+        settingsTitle: "KNOTEN-EINSTELLUNGEN", displayName: "ANZEIGENAME", language: "SPRACHE",
+        theme: "NEON-THEMA", matrixRain: "Matrix-Regen", reducedMotion: "Weniger Bewegung", sounds: "Töne",
+        geminiKey: "GEMINI API-SCHLÜSSEL", geminiHint: "Nur in diesem Browser gespeichert. Holen:",
+        crypto: "KRYPTO (Verschleierung)", regen: "SCHLÜSSEL NEU ERZEUGEN",
+        exportChats: "Chats exportieren (JSON)", clearData: "Alle Daten löschen",
+        ctxReply: "Antworten", ctxReact: "Reaktion", ctxPin: "Anheften", ctxCopy: "Kopieren", ctxForward: "Weiterleiten", ctxDelete: "Löschen",
+        forwardTitle: "Weiterleiten an...", cancel: "Abbrechen",
+        pollTitle: "UMFRAGE ERSTELLEN", pollQ: "Frage...", opt1: "Option 1", opt2: "Option 2", launch: "STARTEN",
+        nothing: "Nichts gefunden", typing: "schreibt...",
+        saved: "Einstellungen gespeichert", copied: "Kopiert", forwarded: "Weitergeleitet"
       }
     };
-    let currentLang = 'ru';
+    let currentLang = "ru";
 
     function t(key) {
-      return (i18n[currentLang] && i18n[currentLang][key]) || i18n.ru[key] || key;
+      const pack = i18n[currentLang] || i18n.ru;
+      return pack[key] || i18n.ru[key] || key;
+    }
+
+    function setText(id, key) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = t(key);
+    }
+    function setPh(id, key) {
+      const el = document.getElementById(id);
+      if (el) el.placeholder = t(key);
+    }
+    function setTitle(id, key) {
+      const el = document.getElementById(id);
+      if (el) el.title = t(key);
     }
 
     function applyLanguage(lang) {
-      currentLang = lang || 'ru';
+      currentLang = i18n[lang] ? lang : "ru";
       document.documentElement.lang = currentLang;
-      const ph = document.getElementById('messageInput');
-      if (ph) ph.placeholder = t('placeholder');
-      const tabG = document.getElementById('tabGlobal');
-      if (tabG) tabG.textContent = t('channels');
-      const tabD = document.getElementById('tabDM');
-      if (tabD) tabD.textContent = t('dm');
-      const chatSearch = document.getElementById('chatSearchInput');
-      if (chatSearch) chatSearch.placeholder = t('searchChats');
-      // Можно расширить по необходимости
+      setText("storiesTitle", "stories");
+      setText("addStoryLabel", "add");
+      setText("tabGlobal", "channels");
+      setText("tabDM", "dm");
+      setPh("chatSearchInput", "searchChats");
+      setPh("inChatSearchInput", "searchMsgs");
+      setPh("messageInput", "placeholder");
+      setPh("aiInput", "aiPlaceholder");
+      setText("pinnedPrefix", "pinned");
+      setText("replyPrefix", "reply");
+      setText("nodeStatus", "node");
+      setText("aiTitle", "aiTitle");
+      setText("aiSubtitle", "aiSub");
+      setText("summarizeChatBtn", "summarize");
+      setText("aiAskBtn", "ask");
+      setText("settingsTitleText", "settingsTitle");
+      setText("labelDisplayName", "displayName");
+      setText("labelLanguage", "language");
+      setText("labelTheme", "theme");
+      setText("labelMatrix", "matrixRain");
+      setText("labelMotion", "reducedMotion");
+      setText("labelSounds", "sounds");
+      setText("labelGemini", "geminiKey");
+      const hint = document.getElementById("geminiHint");
+      if (hint) {
+        hint.innerHTML = escapeHtml(t("geminiHint")) + ' <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400">aistudio.google.com</a>';
+      }
+      setText("labelCrypto", "crypto");
+      setText("regenKeysBtn", "regen");
+      setText("exportChatsBtn", "exportChats");
+      setText("clearAllDataBtn", "clearData");
+      setText("ctxReply", "ctxReply");
+      setText("ctxReact", "ctxReact");
+      setText("ctxPin", "ctxPin");
+      setText("ctxCopy", "ctxCopy");
+      setText("ctxForward", "ctxForward");
+      setText("ctxDelete", "ctxDelete");
+      setText("forwardTitle", "forwardTitle");
+      setText("cancelForwardBtn", "cancel");
+      setText("cancelPollBtn", "cancel");
+      setText("submitPollBtn", "launch");
+      setPh("pollQuestion", "pollQ");
+      setPh("pollOpt1", "opt1");
+      setPh("pollOpt2", "opt2");
+      const pollH = document.getElementById("pollTitle");
+      if (pollH) pollH.textContent = t("pollTitle");
+      const rec = document.getElementById("recordingTypeLabel");
+      if (rec && !rec.dataset.live) rec.textContent = t("rec");
+      const stop = document.getElementById("stopRecordingBtn");
+      if (stop) stop.textContent = t("stop");
+      const count = document.getElementById("searchResultCount");
+      if (count && state && Array.isArray(state.searchMatches) && state.searchMatches.length === 0) {
+        count.textContent = "0 " + t("matches");
+      }
     }
 
     /* ==========================================================================
@@ -1158,7 +1266,7 @@
       const q = filter.trim().toLowerCase();
       const filtered = state.chats.filter(c => !q || c.name.toLowerCase().includes(q));
       if (filtered.length === 0) {
-        chatListEl.innerHTML = '<div class="p-4 text-center text-slate-500 text-xs">Ничего не найдено</div>';
+        chatListEl.innerHTML = `<div class="p-4 text-center text-slate-500 text-xs">${escapeHtml(t('nothing'))}</div>`;
         return;
       }
       filtered.forEach(chat => {
@@ -1442,6 +1550,15 @@
       saveState();
       broadcastTyping(false);
     });
+    if (window.visualViewport) {
+      const fitKeyboard = () => {
+        const vv = window.visualViewport;
+        const overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        document.getElementById('composer').style.paddingBottom = (overlap > 0 ? overlap : 8) + 'px';
+      };
+      window.visualViewport.addEventListener('resize', fitKeyboard);
+      window.visualViewport.addEventListener('scroll', fitKeyboard);
+    }
 
     /* ==========================================================================
        9. ГОЛОСОВЫЕ СООБЩЕНИЯ
@@ -1655,7 +1772,7 @@
       });
       state.searchMatches = [];
       state.searchIndex = -1;
-      searchResultCount.textContent = '0 matches';
+      searchResultCount.textContent = '0 ' + t('matches');
     }
 
     function performSearch(query) {
@@ -1697,7 +1814,7 @@
       });
       state.searchMatches = matches;
       state.searchIndex = matches.length ? 0 : -1;
-      searchResultCount.textContent = `${matches.length} matches`;
+      searchResultCount.textContent = `${matches.length} ${t('matches')}`;
       if (matches.length) {
         matches[0].classList.add('current');
         matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2287,7 +2404,7 @@
       typingChannel.onmessage = (e) => {
         const { chatId, user, typing } = e.data;
         if (chatId === state.activeChatId && user !== state.currentUser) {
-          document.getElementById('typingStatus').textContent = typing ? `${user} is typing...` : '';
+          document.getElementById('typingStatus').textContent = typing ? `${user} ${t('typing')}` : '';
         }
       };
     }
@@ -2300,7 +2417,7 @@
           const val = snap.val() || {};
           const others = Object.keys(val).filter(u => u !== state.currentUser && Date.now() - (val[u].at || 0) < 3000);
           document.getElementById('typingStatus').textContent = others.length
-            ? (others.length === 1 ? `${others[0]} is typing...` : `${others.slice(0, 3).join(', ')} typing...`)
+            ? (others.length === 1 ? `${others[0]} ${t('typing')}` : `${others.slice(0, 3).join(', ')} ${t('typing')}`)
             : '';
         }).catch(() => {});
       }, 1500);
@@ -2330,34 +2447,54 @@
       document.getElementById('settingsLanguage').value = s.language || 'ru';
       document.getElementById('settingsModal').classList.remove('hidden');
     });
-    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-      // Save on close
-      const s = loadSettings();
-      const newName = document.getElementById('settingsDisplayName').value.trim();
-      if (newName) {
-        state.currentUser = newName;
-        document.getElementById('userCallsign').textContent = newName;
-        document.getElementById('userAvatar').textContent = newName.slice(0, 2).toUpperCase();
+    function closeSettings() {
+      const modal = document.getElementById('settingsModal');
+      if (modal) modal.classList.add('hidden');
+      try {
+        const s = loadSettings();
+        const newName = document.getElementById('settingsDisplayName').value.trim();
+        if (newName) {
+          state.currentUser = newName;
+          document.getElementById('userCallsign').textContent = newName;
+          document.getElementById('userAvatar').textContent = newName.slice(0, 2).toUpperCase();
+        }
+        s.displayName = state.currentUser;
+        s.geminiKey = document.getElementById('settingsGeminiKey').value.trim();
+        s.matrixRain = document.getElementById('settingsMatrixRain').checked;
+        s.reducedMotion = document.getElementById('settingsReducedMotion').checked;
+        s.sounds = document.getElementById('settingsSounds').checked;
+        s.language = document.getElementById('settingsLanguage').value || 'ru';
+        matrixActive = s.matrixRain;
+        document.body.classList.toggle('reduced-motion', s.reducedMotion);
+        applyLanguage(s.language);
+        saveSettings(s);
+        saveState();
+        toast(t('saved'), 'success');
+      } catch (err) {
+        console.error(err);
       }
-      s.displayName = state.currentUser;
-      s.geminiKey = document.getElementById('settingsGeminiKey').value.trim();
-      s.matrixRain = document.getElementById('settingsMatrixRain').checked;
-      s.reducedMotion = document.getElementById('settingsReducedMotion').checked;
-      s.sounds = document.getElementById('settingsSounds').checked;
-      s.language = document.getElementById('settingsLanguage').value || 'ru';
-      matrixActive = s.matrixRain;
-      document.body.classList.toggle('reduced-motion', s.reducedMotion);
-      applyLanguage(s.language);
+    }
+    document.getElementById('closeSettingsBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeSettings();
+    });
+    document.getElementById('settingsModal').addEventListener('click', (e) => {
+      if (e.target.id === 'settingsModal') closeSettings();
+    });
+
+    document.getElementById('settingsLanguage').addEventListener('change', (e) => {
+      const lang = e.target.value || 'ru';
+      applyLanguage(lang);
+      const s = loadSettings();
+      s.language = lang;
       saveSettings(s);
-      saveState();
-      document.getElementById('settingsModal').classList.add('hidden');
-      toast('Настройки сохранены / Settings saved', 'success');
     });
 
     document.querySelectorAll('.theme-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const theme = btn.dataset.theme;
-        document.body.className = `h-screen flex flex-col relative select-none theme-${theme}`;
+        document.body.className = `h-[100dvh] flex flex-col relative select-none theme-${theme}`;
         const s = loadSettings();
         s.theme = theme;
         saveSettings(s);
