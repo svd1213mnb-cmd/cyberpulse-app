@@ -838,6 +838,7 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+      }
       },
       playReceive() {
         if (!this.isEnabled()) return; this.init();
@@ -849,6 +850,7 @@
           gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
           osc.connect(gain); gain.connect(this.ctx.destination);
           osc.start(startTime); osc.stop(startTime + duration);
+        }
         };
         playBeep(880, this.ctx.currentTime, 0.1);
         playBeep(1200, this.ctx.currentTime + 0.12, 0.15);
@@ -862,6 +864,7 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+      }
       },
       playError() {
         if (!this.isEnabled()) return; this.init();
@@ -872,6 +875,7 @@
         gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+      }
       },
       playCallStart() {
         if (!this.isEnabled()) return; this.init();
@@ -882,6 +886,7 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+      }
       },
          playCallEnd() {
         if (!this.isEnabled()) return; this.init();
@@ -892,6 +897,7 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+         }
       },
 
       
