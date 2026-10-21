@@ -369,7 +369,7 @@ document.getElementById('auth-submit-btn').onclick = async () => {
     });
 
     authModal.classList.add('hidden');
-    initApp(userCred.user.uid, callsign, pubKeyBase64);
+   
   } catch(err) {
     alert('Ошибка авторизации: ' + escapeHTML(err.message));
   }
