@@ -409,6 +409,9 @@
                 <i class="far fa-smile"></i>
               </button>
               <button type="button" id="createPollBtn" class="p-2 text-slate-400 hover:text-purple-400 shrink-0" title="Create poll">
+              <button type="button" id="secretMsgBtn" class="p-2 text-slate-400 hover:text-red-500 shrink-0 transition-colors" title="Self-Destruct Message">
+                <i class="fas fa-bomb"></i>
+              </button>
                 <i class="fas fa-poll-h"></i>
               </button>
             </div>
@@ -791,6 +794,118 @@
        ========================================================================== */
     const LS_KEY = 'cyberpulse_v28_state'; const LS_SETTINGS = 'cyberpulse_v28_settings';
     function loadSettings() { try { return JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}'); } catch { return {}; } }
+    /* ==========================================================================
+       5.1 КИБЕР-ЗВУКИ (WEB AUDIO API)
+       ========================================================================== */
+    const SoundEngine = {
+      ctx: null,
+      init() {,
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      // Озвучка текста (Text-to-Speech)
+      speak(text) {,
+        if (!this.isEnabled()) return;
+        if ('speechSynthesis' in window) {
+          // Отменяем предыдущую речь, если она еще идет
+          window.speechSynthesis.cancel(); 
+          
+          // Очищаем текст от markdown-символов
+          const cleanText = text.replace(/[*_`#]/g, '');
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          utterance.lang = 'ru-RU';
+          utterance.rate = 1.1; // Скорость (чуть быстрее обычного)
+          utterance.pitch = 0.8; // Тон (пониже, для эффекта робота)
+          
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+      },
+      isEnabled() {,
+        const s = loadSettings();
+        return s.sounds !== false; // Если галочка стоит, звук включен
+      },
+      playTransmit() {,
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+      },
+      playReceive() {,
+        if (!this.isEnabled()) return; this.init();
+        const playBeep = (freq, startTime, duration) => {
+          const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+          osc.type = 'sine'; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(startTime); osc.stop(startTime + duration);
+        };
+        playBeep(880, this.ctx.currentTime, 0.1);
+        playBeep(1200, this.ctx.currentTime + 0.12, 0.15);
+      },
+      playClick() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+      },
+      playError() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+      },
+      playCallStart() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+      },
+         playCallEnd() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+      },
+
+      
+      speak(text) {
+        if (!this.isEnabled()) return;
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel(); // Отменяем предыдущую речь
+          const cleanText = text.replace(/[*_`#]/g, ''); // Убираем маркдаун
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          utterance.lang = 'ru-RU';
+          utterance.rate = 1.1; // Скорость
+          utterance.pitch = 0.8; // Тон (робот)
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    };
     function saveSettings(s) { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)); }
     function loadState() { try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
     
@@ -1420,7 +1535,10 @@ if (chatForm) {
         e.preventDefault();
         const text = messageInput.value.trim();
         const hasMedia = !!state.pendingAttachment;
-        if (!text && !hasMedia) return;
+                if (!text && !hasMedia) {
+          SoundEngine.playError();
+          return;
+        }
         const newMsg = { id: uid(), sender: state.currentUser, text: text || '', timestamp: Date.now(), isSelf: true, reactions: {} };
         if (state.replyTo) { newMsg.replyTo = { id: state.replyTo.id, sender: state.replyTo.sender, text: state.replyTo.text }; cancelReply(); }
         if (state.pendingAttachment) { newMsg.media = { ...state.pendingAttachment }; state.pendingAttachment = null; document.getElementById('attachmentPreview')?.classList.add('hidden'); }
@@ -1430,6 +1548,7 @@ if (chatForm) {
         renderMessages(true);
         saveState();
         broadcastTyping(false); // Will be in a later part, but good to keep structure
+        SoundEngine.playTransmit();
     });
 }
     /* ==========================================================================
@@ -1482,6 +1601,7 @@ if (chatForm) {
         renderMessages(true); // true = принудительный скролл вниз
         saveState(); 
         broadcastTyping(false); // Отключаем статус "печатает..."
+SoundEngine.playTransmit();
       });
     }
 
@@ -2001,6 +2121,30 @@ if (chatForm) {
     document.getElementById('closeAiDrawerBtn')?.addEventListener('click', () => aiDrawer?.classList.add('hidden'));
 
     // Запрос к Google API
+    // Функция роботизированной озвучки
+    function speakRobot(text) {
+      if (!window.speechSynthesis) return; // Если браузер не поддерживает
+      if (!SoundEngine.isEnabled()) return; // Если звуки выключены в настройках
+
+      // Убираем Markdown-символы (звездочки, решетки), чтобы робот их не читал
+      const cleanText = text.replace(/[*_`#]/g, '');
+
+      // Останавливаем предыдущую озвучку, если она еще говорит
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      
+      // Делаем голос роботизированным
+      utterance.pitch = 0.6; // Понижаем тон (от 0 до 2)
+      utterance.rate = 1.1;  // Немного ускоряем темп (от 0.1 до 10)
+
+      // Ищем подходящий голос (сначала русский, потом английский)
+      const voices = window.speechSynthesis.getVoices();
+      let selectedVoice = voices.find(v => v.lang.includes('ru')) || voices.find(v => v.lang.includes('en'));
+      if (selectedVoice) utterance.voice = selectedVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
     async function callGemini(prompt, system = 'Ты — AI-компаньон в киберпанк-мессенджере CYBER_PULSE. Отвечай кратко, технично, с лёгким юмором. На русском.') {
       const key = loadSettings().geminiKey; 
       if (!key) { 
@@ -2051,7 +2195,9 @@ if (chatForm) {
       const answer = await callGemini(val); 
       if (answer && aiFeed) { 
         aiFeed.innerHTML += `<div class="p-2 rounded bg-slate-900 text-slate-300 border border-slate-800"><strong class="text-cyan-400">GEMINI_AI:</strong> ${escapeHtml(answer).replace(/\n/g, '<br>')}</div>`; 
-        aiFeed.scrollTop = aiFeed.scrollHeight; 
+        aiFeed.scrollTop = aiFeed.scrollHeight;
+ SoundEngine.playReceive();
+SoundEngine.speak(answer); 
       } 
     });
 
@@ -2100,9 +2246,11 @@ if (chatForm) {
 
     // Начало звонка (создание комнаты)
     async function startCall(video = true) {
+        SoundEngine.playCallStart();
       if (!firebaseDb) { toast('Firebase не инициализирован', 'error'); return; }
       
       try {
+ SoundEngine.playCallStart();
         // Получаем доступ к камере/микрофону
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
         const lv = document.getElementById('localVideo');
@@ -2217,6 +2365,8 @@ if (chatForm) {
 
     // Завершение звонка
     document.getElementById('endCallBtn')?.addEventListener('click', () => {
+SoundEngine.playCallEnd();
+SoundEngine.playCallEnd();
       if (localStream) localStream.getTracks().forEach(t => t.stop());
       if (peerConnection) peerConnection.close();
       if (currentRoomId && firebaseDb) firebaseDb.ref(`calls/${currentRoomId}`).remove().catch(() => {});
@@ -2426,7 +2576,20 @@ if (chatForm) {
        ========================================================================== */
     // Закрытие контекстного меню по Escape
     document.addEventListener('keydown', (e) => {
+    // Звук клика для всех кнопок
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('button') || e.target.closest('.theme-btn') || e.target.closest('.nav-btn') || e.target.closest('label[for]')) {
+        SoundEngine.playClick();
+      }
+    });
       if (e.key === 'Escape') {
+    // Звук клика для всех кнопок
+    document.addEventListener('click', (e) => {
+      const isButton = e.target.closest('button') || e.target.closest('.theme-btn') || e.target.closest('.nav-btn') || e.target.closest('label[for]');
+      if (isButton) {
+        SoundEngine.playClick();
+      }
+    });
         contextMenu?.classList.add('hidden');
         quickReactPanel?.classList.add('hidden');
         document.getElementById('emojiModal')?.classList.add('hidden');
