@@ -408,7 +408,9 @@
               <button type="button" id="emojiPickerBtn" class="p-2 text-slate-400 hover:text-amber-400 shrink-0">
                 <i class="far fa-smile"></i>
               </button>
-              <button type="button" id="createPollBtn" class="p-2 text-slate-400 hover:text-purple-400 shrink-0" title="Create poll">
+                            <button type="button" id="createPollBtn" class="p-2 text-slate-400 hover:text-purple-400 shrink-0" title="Create poll">
+                <i class="fas fa-poll-h"></i>
+              </button>
               <button type="button" id="secretMsgBtn" class="p-2 text-slate-400 hover:text-red-500 shrink-0 transition-colors" title="Self-Destruct Message">
                 <i class="fas fa-bomb"></i>
               </button>
@@ -1021,14 +1023,11 @@
       
                  currentMsgs.forEach(msg => {
         // Если сообщение секретное
-        if (msg.secret && msg.expiresAt) {
-          const timeLeft = msg.expiresAt - Date.now();
-          
-          if (timeLeft <= 0) {
-            return; // <--- ВОТ ЭТО УДАЛЯЕТ СООБЩЕНИЕ (пропускает его отрисовку)
+              if (msg.secret) {
+          if (Date.now() > msg.expiresAt) {
+            return; // Время вышло, сообщение не рисуем (оно исчезает)
           } else {
-            // Если время еще есть, ставим таймер на перерисовку
-            setTimeout(() => renderMessages(), timeLeft + 100);
+            setTimeout(() => renderMessages(), msg.expiresAt - Date.now() + 100);
           }
         }
 
@@ -1586,13 +1585,15 @@ if (chatForm) {
         if (!text && !hasMedia) return;
 
         // Создаем объект нового сообщения
-        const newMsg = { 
-          id: uid(), 
-          sender: state.currentUser, 
-          text: text || '', 
-          timestamp: Date.now(), 
-          isSelf: true, 
-          reactions: {} 
+              const newMsg = {
+            id: uid(),
+            sender: state.currentUser,
+            text: text || '',
+            timestamp: Date.now(),
+            isSelf: true,
+            reactions: {},
+            secret: state.secretMode, 
+            expiresAt: state.secretMode ? Date.now() + 10000 : null 
         };
         
         // Добавляем ответ, если он был
