@@ -797,37 +797,20 @@
     /* ==========================================================================
        5.1 КИБЕР-ЗВУКИ (WEB AUDIO API)
        ========================================================================== */
-    const SoundEngine = {
+      const SoundEngine = {
       ctx: null,
-      init() {,
+      init() {
         if (!this.ctx) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           this.ctx = new AudioContext();
         }
         if (this.ctx.state === 'suspended') this.ctx.resume();
-      // Озвучка текста (Text-to-Speech)
-      speak(text) {,
-        if (!this.isEnabled()) return;
-        if ('speechSynthesis' in window) {
-          // Отменяем предыдущую речь, если она еще идет
-          window.speechSynthesis.cancel(); 
-          
-          // Очищаем текст от markdown-символов
-          const cleanText = text.replace(/[*_`#]/g, '');
-          const utterance = new SpeechSynthesisUtterance(cleanText);
-          utterance.lang = 'ru-RU';
-          utterance.rate = 1.1; // Скорость (чуть быстрее обычного)
-          utterance.pitch = 0.8; // Тон (пониже, для эффекта робота)
-          
-          window.speechSynthesis.speak(utterance);
-        }
-      }
       },
-      isEnabled() {,
+      isEnabled() {
         const s = loadSettings();
-        return s.sounds !== false; // Если галочка стоит, звук включен
+        return s.sounds !== false;
       },
-      playTransmit() {,
+      playTransmit() {
         if (!this.isEnabled()) return; this.init();
         const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, this.ctx.currentTime);
@@ -837,7 +820,7 @@
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.1);
       },
-      playReceive() {,
+      playReceive() {
         if (!this.isEnabled()) return; this.init();
         const playBeep = (freq, startTime, duration) => {
           const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
@@ -881,7 +864,7 @@
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
       },
-         playCallEnd() {
+      playCallEnd() {
         if (!this.isEnabled()) return; this.init();
         const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
         osc.type = 'sine'; osc.frequency.setValueAtTime(600, this.ctx.currentTime);
@@ -891,22 +874,19 @@
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
       },
-
-      
       speak(text) {
         if (!this.isEnabled()) return;
         if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel(); // Отменяем предыдущую речь
-          const cleanText = text.replace(/[*_`#]/g, ''); // Убираем маркдаун
+          window.speechSynthesis.cancel();
+          const cleanText = text.replace(/[*_`#]/g, '');
           const utterance = new SpeechSynthesisUtterance(cleanText);
           utterance.lang = 'ru-RU';
-          utterance.rate = 1.1; // Скорость
-          utterance.pitch = 0.8; // Тон (робот)
+          utterance.rate = 1.1;
+          utterance.pitch = 0.8;
           window.speechSynthesis.speak(utterance);
         }
       }
     };
-    function saveSettings(s) { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)); }
     function loadState() { try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
     
     // Сохранение состояния (не сохраняем медиа, только текст и метаданные)
