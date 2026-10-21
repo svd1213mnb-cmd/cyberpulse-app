@@ -797,7 +797,7 @@
     /* ==========================================================================
        5.1 КИБЕР-ЗВУКИ (WEB AUDIO API)
        ========================================================================== */
-        const SoundEngine = {
+         const SoundEngine = {
       ctx: null,
       init() {
         if (!this.ctx) {
@@ -865,7 +865,6 @@
         gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.3);
-      }
       },
       playCallStart() {
         if (!this.isEnabled()) return; this.init();
@@ -876,7 +875,6 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
-        }
       },
       playCallEnd() {
         if (!this.isEnabled()) return; this.init();
@@ -889,72 +887,6 @@
         osc.start(); osc.stop(this.ctx.currentTime + 0.4);
       }
     };
-    function saveSettings(s) { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)); }
-    function loadState() { try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
-    
-    // Сохранение состояния (не сохраняем медиа, только текст и метаданные)
-    function saveState() { 
-      const toSave = { currentUser: state.currentUser, activeChatId: state.activeChatId, chats: state.chats, messages: state.messages, stories: state.stories, viewedStories: state.viewedStories, pinned: state.pinned }; 
-      try { localStorage.setItem(LS_KEY, JSON.stringify(toSave)); } catch (e) { console.warn('localStorage quota', e); } 
-    }
-
-    // Дефолтные данные при первом запуске
-    const defaultChats = [
-      { id: 'global', name: '# matrix-global', type: 'channel', unread: 0 }, 
-      { id: 'dev-node', name: '# dev-talk', type: 'channel', unread: 0 }, 
-      { id: 'dm-ghost', name: 'Ghost_Zero', type: 'dm', unread: 0 }
-    ];
-    
-    const defaultMessages = { 
-      'global': [
-        { id: 'm1', sender: 'System', text: 'Node matrix stream initialized.', timestamp: Date.now() - 600000, isSelf: false, reactions: {} }, 
-        { id: 'm2', sender: 'Ghost_Zero', text: 'Greetings operator.', timestamp: Date.now() - 480000, isSelf: false, reactions: {} }
-      ], 
-      'dev-node': [{ id: 'm3', sender: 'DevCore', text: 'WebRTC ready.', timestamp: Date.now() - 900000, isSelf: false, reactions: {} }], 
-      'dm-ghost': [{ id: 'm4', sender: 'Ghost_Zero', text: 'Check voice stage.', timestamp: Date.now() - 300000, isSelf: false, reactions: {} }] 
-    };
-    
-    const defaultStories = [
-      { id: 's1', author: 'Matrix Central', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80', mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80', type: 'image' }, 
-      { id: 's2', author: 'Operator X', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80', mediaUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=600&q=80', type: 'image' }
-    ];
-
-    // Инициализация объекта state
-    let state = { 
-      currentUser: 'Operator_' + Math.floor(100 + Math.random() * 900), 
-      activeChatId: 'global', 
-      selectedMessageForContext: null, 
-      replyTo: null, 
-      chats: defaultChats, 
-      messages: defaultMessages, 
-      stories: defaultStories, 
-      viewedStories: [], 
-      pinned: null, 
-      pendingAttachment: null, 
-      searchMatches: [], 
-      searchIndex: -1 
-    };
-
-    // Загрузка сохраненного состояния при старте
-    (function initState() {
-      const saved = loadState(); 
-      const settings = loadSettings();
-      
-      if (saved) { 
-        state.currentUser = saved.currentUser || state.currentUser; 
-        state.activeChatId = saved.activeChatId || 'global'; 
-        state.chats = saved.chats || defaultChats; 
-        state.messages = saved.messages || defaultMessages; 
-        state.stories = saved.stories || defaultStories; 
-        state.viewedStories = saved.viewedStories || []; 
-        state.pinned = saved.pinned || null; 
-      }
-      
-      if (settings.displayName) state.currentUser = settings.displayName;
-      if (settings.theme) document.body.classList.add('theme-' + settings.theme);
-      if (settings.reducedMotion) document.body.classList.add('reduced-motion');
-      if (settings.matrixRain === false) window.matrixActive = false;
-    })();
     /* ==========================================================================
        6. ОТРИСОВКА ИНТЕРФЕЙСА (РЕНДЕРИНГ)
        ========================================================================== */
