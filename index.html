@@ -414,37 +414,47 @@ function initApp(uid, callsign, pubKey) {
 }
 
 async function openChat(peerUser) {
-  document.getElementById('app').classList.add('chat-open'); // Адаптивное открытие на мобильных
-  currentChatUser = peerUser;
-  const safeCallsign = escapeHTML(peerUser.callsign);
-  
-  document.getElementById('chat-title').textContent = safeCallsign;
-  document.getElementById('chat-status').textContent = 'E2EE Защищенный канал активен';
-  document.getElementById('chat-icon').style.backgroundImage = `url(${generateGlitchAvatar(safeCallsign)})`;
-  document.getElementById('messages').innerHTML = '';
+  try {
+    document.getElementById('app').classList.add('chat-open');
+    currentChatUser = peerUser;
+    const safeCallsign = escapeHTML(peerUser.callsign);
+    
+    document.getElementById('chat-title').textContent = safeCallsign;
+    document.getElementById('chat-status').textContent = 'E2EE Защищенный канал активен';
+    document.getElementById('chat-icon').style.backgroundImage = `url(${generateGlitchAvatar(safeCallsign)})`;
+    document.getElementById('messages').innerHTML = '';
 
-  const fp = await calculateFingerprint(myPubKeyBase64, peerUser.pubKey);
-  const fpEl = document.getElementById('fingerprint-display');
-  fpEl.textContent = `SAFETY NUMBER: ${fp}`;
-  fpEl.classList.remove('hidden');
+    if (!peerUser.pubKey) {
+      throw new Error("У этого пользователя нет публичного ключа. Зарегистрируйте НОВЫЙ аккаунт для теста.");
+    }
 
-  const chatId = [currentUid, peerUser.uid].sort().join('_');
-  
-  await db.ref(`chats/${chatId}/members`).update({
-    [currentUid]: true,
-    [peerUser.uid]: true
-  });
+    const fp = await calculateFingerprint(myPubKeyBase64, peerUser.pubKey);
+    const fpEl = document.getElementById('fingerprint-display');
+    fpEl.textContent = `SAFETY NUMBER: ${fp}`;
+    fpEl.classList.remove('hidden');
 
-  if(activeListenerRef) activeListenerRef.off();
+    const chatId = [currentUid, peerUser.uid].sort().join('_');
+    
+    await db.ref(`chats/${chatId}/members`).update({
+      [currentUid]: true,
+      [peerUser.uid]: true
+    });
 
-  const sharedKey = await deriveSharedKey(peerUser.pubKey);
+    if(activeListenerRef) activeListenerRef.off();
 
-  activeListenerRef = db.ref('chats/' + chatId + '/messages');
-  activeListenerRef.on('child_added', async snapshot => {
-    const msg = snapshot.val();
-    const rawText = await decryptText(msg.ct, msg.iv, sharedKey);
-    addMsgToUI(rawText, msg.sender === currentUid);
-  });
+    const sharedKey = await deriveSharedKey(peerUser.pubKey);
+
+    activeListenerRef = db.ref('chats/' + chatId + '/messages');
+    activeListenerRef.on('child_added', async snapshot => {
+      const msg = snapshot.val();
+      const rawText = await decryptText(msg.ct, msg.iv, sharedKey);
+      addMsgToUI(rawText, msg.sender === currentUid);
+    });
+  } catch (e) {
+    alert("Ошибка при открытии чата:\n" + e.message);
+    console.error(e);
+    document.getElementById('app').classList.remove('chat-open');
+  }
 }
 
 /* ========== БЕЗОПАСНЫЙ РЕНДЕРИНГ СООБЩЕНИЙ ========== */
