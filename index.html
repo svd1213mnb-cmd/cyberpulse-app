@@ -1006,11 +1006,30 @@
       // Умный авто-скролл: проверяем, находится ли пользователь в самом низу
       const isAtBottom = messageFeedEl.scrollHeight - messageFeedEl.scrollTop - messageFeedEl.clientHeight < 150;
       
-      messageFeedEl.innerHTML = ''; 
+          messageFeedEl.innerHTML = ''; 
+      
+      // АВТОМАТИЧЕСКАЯ ОЧИСТКА ВЗОРВАННЫХ СООБЩЕНИЙ
+      if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = [];
+      state.messages[state.activeChatId] = state.messages[state.activeChatId].filter(msg => {
+        if (msg.secret && msg.expiresAt && Date.now() > msg.expiresAt) {
+          return false; // Удаляем из памяти, если время вышло
+        }
+        return true;
+      });
+
       const currentMsgs = state.messages[state.activeChatId] || [];
       
-      currentMsgs.forEach(msg => {
+           currentMsgs.forEach(msg => {
+        // Ставим таймер на перерисовку, если сообщение секретное
+        if (msg.secret && msg.expiresAt) {
+          const timeLeft = msg.expiresAt - Date.now();
+          if (timeLeft > 0) {
+            setTimeout(() => renderMessages(), timeLeft + 100);
+          }
+        }
+
         const wrap = document.createElement('div'); 
+        // ... дальше твой старый код отрисовки wrap ...
         wrap.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 group relative w-full mb-3`; 
         wrap.dataset.msgId = msg.id;
         
