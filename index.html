@@ -799,12 +799,13 @@
        ========================================================================== */
     const SoundEngine = {
       ctx: null,
-      init() {,
+      init() {
         if (!this.ctx) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           this.ctx = new AudioContext();
         }
         if (this.ctx.state === 'suspended') this.ctx.resume();
+      },
       // Озвучка текста (Text-to-Speech)
       speak(text) {,
         if (!this.isEnabled()) return;
