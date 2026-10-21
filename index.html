@@ -807,28 +807,21 @@
         if (this.ctx.state === 'suspended') this.ctx.resume();
       },
       // Озвучка текста (Text-to-Speech)
-      speak(text) {
+          speak(text) {
         if (!this.isEnabled()) return;
         if ('speechSynthesis' in window) {
-          // Отменяем предыдущую речь, если она еще идет
           window.speechSynthesis.cancel(); 
-          
-          // Очищаем текст от markdown-символов
-          const cleanText = text.replace(/[*_`#]/g, '');
+          const cleanText = text.replace(/[*_#]/g, ''); 
           const utterance = new SpeechSynthesisUtterance(cleanText);
           utterance.lang = 'ru-RU';
-          utterance.rate = 1.1; // Скорость (чуть быстрее обычного)
-          utterance.pitch = 0.8; // Тон (пониже, для эффекта робота)
-          
+          utterance.rate = 1.1; 
+          utterance.pitch = 0.8; 
           window.speechSynthesis.speak(utterance);
         }
-        },
-      
-       
+      },
       isEnabled() {
         const s = loadSettings();
-        return s.sounds !== false; // Если галочка стоит, звук включен
-      }
+        return s.sounds !== false; 
       },
       playTransmit() {
         if (!this.isEnabled()) return; this.init();
@@ -839,7 +832,6 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.1);
-    }
       },
       
       playReceive() {
