@@ -407,7 +407,11 @@ function initApp(uid, callsign, pubKey) {
           <div style="font:700 9px 'JetBrains Mono';color:var(--muted)">Нажмите для E2EE чата</div>
         </div>
       `;
-      btn.onclick = () => openChat(u);
+      btn.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  openChat(u);
+};
       usersList.appendChild(btn);
     });
   });
