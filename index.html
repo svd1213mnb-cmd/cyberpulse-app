@@ -828,6 +828,7 @@
       isEnabled() {
         const s = loadSettings();
         return s.sounds !== false; // Если галочка стоит, звук включен
+      }
       },
       playTransmit() {
         if (!this.isEnabled()) return; this.init();
