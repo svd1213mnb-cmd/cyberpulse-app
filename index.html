@@ -418,7 +418,7 @@ function initApp(uid, callsign, pubKey) {
 }
 
 async function openChat(peerUser) {
-  try {
+  try { document.getElementById('chat-title').textContent = "ЗАГРУЗКА...";
     document.getElementById('app').classList.add('chat-open');
     currentChatUser = peerUser;
     const safeCallsign = escapeHTML(peerUser.callsign);
