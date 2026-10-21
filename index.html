@@ -1018,6 +1018,7 @@
         }
         return true;
       });
+ saveState();
 
       const currentMsgs = state.messages[state.activeChatId] || [];
       
@@ -1044,8 +1045,7 @@
         
         const bubble = document.createElement('div'); 
         // На мобилке max-w-[85%], на ПК max-w-md
-        bubble.className = `max-w-[85%] md:max-w-md px-3.5 py-2 rounded-xl text-sm relative ${msg.isSelf ? 'msg-bubble-self text-white' : 'msg-bubble-other text-slate-200'}`;
-
+               bubble.className = `max-w-[85%] md:max-w-md px-3.5 py-2 rounded-xl text-sm relative ${msg.isSelf ? 'msg-bubble-self text-white' : 'msg-bubble-other text-slate-200'} ${msg.secret ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : ''}`;
         // 1. Ответ на сообщение (Quote)
         if (msg.replyTo) { 
           const quote = document.createElement('div'); 
