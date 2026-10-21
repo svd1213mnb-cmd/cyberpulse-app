@@ -45,29 +45,58 @@
 
     .code-font { font-family: 'Fira Code', monospace; }
 
-    /* Цветовые темы */
-       :root {
+       /* Цветовые темы */
+    :root {
       --primary-neon: #00f0ff;
       --primary-glow: rgba(0, 240, 255, 0.4);
       --bg-glass: rgba(13, 17, 28, 0.85);
       --border-neon: rgba(0, 240, 255, 0.25);
       --bg-main: #05060a;
+      --input-bg: rgba(15, 23, 42, 0.9);
     }
+    
     .theme-emerald { 
-      --primary-neon: #10b981; --primary-glow: rgba(16, 185, 129, 0.4); --border-neon: rgba(16, 185, 129, 0.25); 
-      --bg-glass: rgba(9, 26, 18, 0.85); --bg-main: #041208; 
+      --primary-neon: #10b981; 
+      --primary-glow: rgba(16, 185, 129, 0.4); 
+      --border-neon: rgba(16, 185, 129, 0.25); 
+      --bg-glass: rgba(6, 28, 16, 0.85); 
+      --bg-main: #041208; 
+      --input-bg: rgba(10, 46, 27, 0.9);
     }
+    
     .theme-pink { 
-      --primary-neon: #ff007f; --primary-glow: rgba(255, 0, 127, 0.4); --border-neon: rgba(255, 0, 127, 0.25); 
-      --bg-glass: rgba(26, 9, 20, 0.85); --bg-main: #12040b; 
+      --primary-neon: #ff007f; 
+      --primary-glow: rgba(255, 0, 127, 0.4); 
+      --border-neon: rgba(255, 0, 127, 0.25); 
+      --bg-glass: rgba(28, 6, 18, 0.85); 
+      --bg-main: #12040b; 
+      --input-bg: rgba(46, 10, 30, 0.9);
     }
+    
     .theme-amber { 
-      --primary-neon: #f59e0b; --primary-glow: rgba(245, 158, 11, 0.4); --border-neon: rgba(245, 158, 11, 0.25); 
-      --bg-glass: rgba(26, 20, 9, 0.85); --bg-main: #120d04; 
+      --primary-neon: #f59e0b; 
+      --primary-glow: rgba(245, 158, 11, 0.4); 
+      --border-neon: rgba(245, 158, 11, 0.25); 
+      --bg-glass: rgba(28, 20, 6, 0.85); 
+      --bg-main: #120d04; 
+      --input-bg: rgba(46, 32, 10, 0.9);
     }
 
-    /* Применяем фоны к body и полям ввода при смене темы */
+    /* ПРИМЕНЯЕМ ФОНЫ К ПАНЕЛЯМ (перебиваем Tailwind) */
     body { background-color: var(--bg-main) !important; transition: background-color 0.3s; }
+    
+    /* Красим основные блоки интерфейса */
+    header, #appSidebar, #mainChatContainer, #aiDrawer, #composer, #chatSearchBox, .glass-panel {
+      background-color: var(--bg-glass) !important;
+      border-color: var(--border-neon) !important;
+    }
+    
+    /* Красим поля ввода и поиска */
+    input[type="text"], input[type="password"], select, #messageInput, #aiInput, #chatSearchInput {
+      background-color: var(--input-bg) !important;
+      border-color: var(--border-neon) !important;
+      color: #fff !important;
+    }
     
     .theme-emerald input, .theme-emerald select { background-color: #0a1a13 !important; border-color: #14532d !important; color: #d1fae5 !important; }
     .theme-pink input, .theme-pink select { background-color: #1a0a13 !important; border-color: #831843 !important; color: #fbcfe8 !important; }
