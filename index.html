@@ -807,7 +807,7 @@
         if (this.ctx.state === 'suspended') this.ctx.resume();
       },
       // Озвучка текста (Text-to-Speech)
-      speak(text) {,
+      speak(text) {
         if (!this.isEnabled()) return;
         if ('speechSynthesis' in window) {
           // Отменяем предыдущую речь, если она еще идет
@@ -822,13 +822,13 @@
           
           window.speechSynthesis.speak(utterance);
         }
-      }
+      
       },
       isEnabled() {,
         const s = loadSettings();
         return s.sounds !== false; // Если галочка стоит, звук включен
       },
-      playTransmit() {,
+      playTransmit() {
         if (!this.isEnabled()) return; this.init();
         const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, this.ctx.currentTime);
@@ -838,7 +838,7 @@
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.1);
       },
-      playReceive() {,
+      playReceive() {
         if (!this.isEnabled()) return; this.init();
         const playBeep = (freq, startTime, duration) => {
           const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
