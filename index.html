@@ -109,9 +109,12 @@
     .msg-media img, .msg-media video { max-width: 280px; max-height: 240px; border-radius: 12px; cursor: pointer; border: 1px solid var(--border-neon); box-shadow: 0 0 12px var(--primary-glow); }
     .msg-media audio { width: 240px; height: 40px; border-radius: 20px; filter: drop-shadow(0 0 6px var(--primary-glow)); }
     
-    /* Кастомный аудио плеер */
-    .cyber-audio-wrap { display: flex; align-items: center; gap: 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid var(--border-neon); border-radius: 24px; padding: 6px 12px 6px 8px; box-shadow: 0 0 14px var(--primary-glow); min-width: 220px; }
-    .cyber-audio-wrap audio { width: 160px; height: 28px; }
+     /* Кастомный аудио-плеер */
+    .custom-audio { display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-neon); border-radius: 20px; padding: 4px 12px; width: 200px; }
+    .custom-audio button { color: var(--primary-neon); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+    .custom-audio .progress-track { flex: 1; height: 4px; background: #334155; border-radius: 2px; cursor: pointer; position: relative; }
+    .custom-audio .progress-fill { height: 100%; background: var(--primary-neon); width: 0%; border-radius: 2px; pointer-events: none; }
+    .custom-audio .time-display { font-size: 10px; color: #94a3b8; font-family: 'Fira Code', monospace; width: 30px; text-align: right; }
     
     /* Видео-кружок */
     .video-note-bubble { width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary-neon); box-shadow: 0 0 18px var(--primary-glow); cursor: pointer; }
@@ -190,7 +193,7 @@
           <i class="fas fa-brain animate-pulse"></i>
           <span class="text-xs font-semibold hidden md:inline">AI_CORE</span>
         </button>
-        <button id="openSettingsBtn" title="Settings" class="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white transition">
+        <button id="openSettingsBtn" title="Settings" class="hidden md:flex p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white transition">
           <i class="fas fa-sliders-h"></i>
         </button>
       </div>
@@ -938,15 +941,57 @@
             vid.controls = true; 
             loadMediaInto(vid, msg.media.id, 'video'); 
             mediaDiv.appendChild(vid); 
-          } else if (msg.media.type === 'audio') { 
-            const w = document.createElement('div'); 
-            w.className = 'cyber-audio-wrap'; 
-            w.innerHTML = '<i class="fas fa-waveform-lines text-cyan-400 text-sm"></i>'; 
-            const aud = document.createElement('audio'); 
-            aud.controls = true; 
-            loadMediaInto(aud, msg.media.id, 'audio'); 
-            w.appendChild(aud); 
-            mediaDiv.appendChild(w); 
+         } else if (msg.media.type === 'audio') { 
+  const w = document.createElement('div'); 
+  w.className = 'custom-audio'; // Используем новый класс
+  
+  const btn = document.createElement('button');
+  btn.innerHTML = '<i class="fas fa-play"></i>';
+  
+  const track = document.createElement('div');
+  track.className = 'progress-track';
+  const fill = document.createElement('div');
+  fill.className = 'progress-fill';
+  track.appendChild(fill);
+  
+  const time = document.createElement('span');
+  time.className = 'time-display';
+  time.textContent = '0:00';
+  
+  const aud = document.createElement('audio');
+  aud.className = 'hidden'; // Скрываем стандартный плеер
+  loadMediaInto(aud, msg.media.id, 'audio');
+  
+  // Логика кастомного плеера
+  btn.onclick = () => {
+    if (aud.paused) { aud.play(); btn.innerHTML = '<i class="fas fa-pause"></i>'; }
+    else { aud.pause(); btn.innerHTML = '<i class="fas fa-play"></i>'; }
+  };
+  
+  aud.onended = () => { btn.innerHTML = '<i class="fas fa-play"></i>'; fill.style.width = '0%'; };
+  
+  aud.ontimeupdate = () => {
+    if (aud.duration) {
+      const percent = (aud.currentTime / aud.duration) * 100;
+      fill.style.width = percent + '%';
+      const m = Math.floor(aud.currentTime / 60);
+      const s = Math.floor(aud.currentTime % 60);
+      time.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    }
+  };
+  
+  track.onclick = (e) => {
+    const rect = track.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    if (aud.duration) aud.currentTime = pos * aud.duration;
+  };
+
+  w.appendChild(btn);
+  w.appendChild(track);
+  w.appendChild(time);
+  w.appendChild(aud);
+  mediaDiv.appendChild(w); 
+}
           } else if (msg.media.type === 'video-note') { 
             const circle = document.createElement('div'); 
             circle.className = 'video-note-bubble'; 
@@ -955,7 +1000,8 @@
             loadMediaInto(vid, msg.media.id, 'video'); 
             circle.appendChild(vid); 
             circle.onclick = () => openMediaViewer(msg.media.id, 'video'); 
-            mediaDiv.appendChild(circle); 
+            mediaDiv.appendChild(circle);
+ 
           } else { 
             const a = document.createElement('a'); 
             a.href = '#'; 
