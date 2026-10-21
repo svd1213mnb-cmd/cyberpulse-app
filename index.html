@@ -839,8 +839,8 @@
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + 0.1);
-      }
       },
+      
       playReceive() {
         if (!this.isEnabled()) return; this.init();
         const playBeep = (freq, startTime, duration) => {
