@@ -254,14 +254,34 @@
 
     /* Message media */
     .msg-media img, .msg-media video {
-      max-width: 260px;
-      max-height: 220px;
-      border-radius: 10px;
+      max-width: 280px;
+      max-height: 240px;
+      border-radius: 12px;
       cursor: pointer;
+      border: 1px solid var(--border-neon);
+      box-shadow: 0 0 12px var(--primary-glow);
     }
     .msg-media audio {
-      width: 220px;
-      height: 36px;
+      width: 240px;
+      height: 40px;
+      border-radius: 20px;
+      filter: drop-shadow(0 0 6px var(--primary-glow));
+    }
+    /* Кастомный стиль аудио-плеера в кибер-стиле */
+    .cyber-audio-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--border-neon);
+      border-radius: 24px;
+      padding: 6px 12px 6px 8px;
+      box-shadow: 0 0 14px var(--primary-glow);
+      min-width: 220px;
+    }
+    .cyber-audio-wrap audio {
+      width: 160px;
+      height: 28px;
     }
     .video-note-bubble {
       width: 140px;
@@ -269,12 +289,23 @@
       border-radius: 50%;
       overflow: hidden;
       border: 2px solid var(--primary-neon);
+      box-shadow: 0 0 18px var(--primary-glow);
       cursor: pointer;
     }
     .video-note-bubble video {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+    /* Улучшенные пузыри сообщений */
+    .msg-bubble-self {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(59, 130, 246, 0.35));
+      border: 1px solid var(--primary-neon);
+      box-shadow: 0 0 16px var(--primary-glow);
+    }
+    .msg-bubble-other {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.25);
     }
   </style>
 </head>
@@ -477,9 +508,9 @@
               <i class="fas fa-poll-h"></i>
             </button>
             <input type="text" id="messageInput" placeholder="Transmit payload... (*bold*, _italic_, `code`)" autocomplete="off" class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 focus:outline-none focus:border-cyan-500 transition code-font">
-            <button type="submit" class="neon-button px-4 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center space-x-1.5">
-              <span>SEND</span>
-              <i class="fas fa-paper-plane text-xs"></i>
+            <button type="submit" class="neon-button px-4 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center space-x-1.5 tracking-wider">
+              <span>TX</span>
+              <i class="fas fa-bolt text-xs"></i>
             </button>
           </form>
         </div>
@@ -554,6 +585,9 @@
         <h3 id="callTitle" class="text-lg font-bold text-cyan-400">ENCRYPTED WEBRTC LINK</h3>
         <p id="callStatus" class="text-xs text-slate-400 font-mono">Establishing peer handshake...</p>
         <p id="callRoomId" class="text-[10px] text-slate-500 font-mono mt-1"></p>
+        <button id="copyCallLinkBtn" class="mt-2 px-3 py-1 rounded neon-button text-[10px] font-bold hidden">
+          <i class="fas fa-link mr-1"></i> COPY ROOM LINK
+        </button>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full h-64 bg-slate-950 rounded-xl overflow-hidden p-2 border border-slate-800">
         <video id="localVideo" autoplay muted playsinline class="w-full h-full object-cover rounded-lg bg-slate-900 border border-cyan-500/30"></video>
@@ -656,6 +690,17 @@
       <div>
         <label class="text-xs text-slate-400 font-bold block mb-1">DISPLAY NAME</label>
         <input type="text" id="settingsDisplayName" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200" placeholder="Operator_XXX">
+      </div>
+
+      <!-- Language -->
+      <div>
+        <label class="text-xs text-slate-400 font-bold block mb-1">INTERFACE LANGUAGE</label>
+        <select id="settingsLanguage" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+          <option value="uk">Українська</option>
+          <option value="de">Deutsch</option>
+        </select>
       </div>
 
       <!-- Theme -->
@@ -773,6 +818,67 @@
       firebaseAuth.signInAnonymously().catch(e => console.warn('Anon auth failed', e));
     } catch (e) {
       console.error('Firebase init error', e);
+    }
+
+    /* ==========================================================================
+       0.5. ЯЗЫКИ (i18n)
+       ========================================================================== */
+    const i18n = {
+      ru: {
+        send: 'TX', placeholder: 'Transmit payload... (*bold*, _italic_, `code`)',
+        channels: 'CHANNELS', dm: 'DIRECT (DM)', searchChats: 'Filter node channels or DMs...',
+        pinned: 'PINNED MSG:', typing: 'печатает...', aiGreet: 'Greetings Operator. Введи Gemini API key в настройках.',
+        settingsTitle: 'MATRIX NODE CONFIGURATION', displayName: 'DISPLAY NAME', language: 'INTERFACE LANGUAGE',
+        theme: 'NEON COLOR THEME', matrixRain: 'Matrix Rain', reducedMotion: 'Reduced Motion', sounds: 'Sound Effects',
+        geminiKey: 'GEMINI API KEY', exportChats: 'Export chats (JSON)', clearData: 'Clear all data',
+        voiceRec: 'Voice recording...', callWaiting: 'Waiting for peer... Share the link'
+      },
+      en: {
+        send: 'TX', placeholder: 'Transmit payload... (*bold*, _italic_, `code`)',
+        channels: 'CHANNELS', dm: 'DIRECT (DM)', searchChats: 'Filter node channels or DMs...',
+        pinned: 'PINNED MSG:', typing: 'is typing...', aiGreet: 'Greetings Operator. Enter Gemini API key in settings.',
+        settingsTitle: 'MATRIX NODE CONFIGURATION', displayName: 'DISPLAY NAME', language: 'INTERFACE LANGUAGE',
+        theme: 'NEON COLOR THEME', matrixRain: 'Matrix Rain', reducedMotion: 'Reduced Motion', sounds: 'Sound Effects',
+        geminiKey: 'GEMINI API KEY', exportChats: 'Export chats (JSON)', clearData: 'Clear all data',
+        voiceRec: 'Voice recording...', callWaiting: 'Waiting for peer... Share the link'
+      },
+      uk: {
+        send: 'TX', placeholder: 'Передати payload... (*bold*, _italic_, `code`)',
+        channels: 'КАНАЛИ', dm: 'ОСОБИСТІ', searchChats: 'Фільтр каналів або DM...',
+        pinned: 'ЗАКРІПЛЕНО:', typing: 'друкує...', aiGreet: 'Вітаю, Операторе. Введи Gemini API key у налаштуваннях.',
+        settingsTitle: 'КОНФІГУРАЦІЯ ВУЗЛА', displayName: 'ІМ\'Я', language: 'МОВА ІНТЕРФЕЙСУ',
+        theme: 'НЕОНОВА ТЕМА', matrixRain: 'Matrix дощ', reducedMotion: 'Зменшити рух', sounds: 'Звуки',
+        geminiKey: 'GEMINI API KEY', exportChats: 'Експорт чатів (JSON)', clearData: 'Очистити дані',
+        voiceRec: 'Запис голосу...', callWaiting: 'Очікування... Поділіться посиланням'
+      },
+      de: {
+        send: 'TX', placeholder: 'Payload senden... (*bold*, _italic_, `code`)',
+        channels: 'KANÄLE', dm: 'DIREKT (DM)', searchChats: 'Kanäle oder DMs filtern...',
+        pinned: 'ANGEHEFTET:', typing: 'schreibt...', aiGreet: 'Begrüßung Operator. Gemini API-Schlüssel in Einstellungen eingeben.',
+        settingsTitle: 'MATRIX KNOTEN KONFIGURATION', displayName: 'ANZEIGENAME', language: 'SPRACHE',
+        theme: 'NEON FARBTHEMA', matrixRain: 'Matrix Regen', reducedMotion: 'Reduzierte Bewegung', sounds: 'Soundeffekte',
+        geminiKey: 'GEMINI API KEY', exportChats: 'Chats exportieren (JSON)', clearData: 'Alle Daten löschen',
+        voiceRec: 'Sprachaufnahme...', callWaiting: 'Warte auf Peer... Link teilen'
+      }
+    };
+    let currentLang = 'ru';
+
+    function t(key) {
+      return (i18n[currentLang] && i18n[currentLang][key]) || i18n.ru[key] || key;
+    }
+
+    function applyLanguage(lang) {
+      currentLang = lang || 'ru';
+      document.documentElement.lang = currentLang;
+      const ph = document.getElementById('messageInput');
+      if (ph) ph.placeholder = t('placeholder');
+      const tabG = document.getElementById('tabGlobal');
+      if (tabG) tabG.textContent = t('channels');
+      const tabD = document.getElementById('tabDM');
+      if (tabD) tabD.textContent = t('dm');
+      const chatSearch = document.getElementById('chatSearchInput');
+      if (chatSearch) chatSearch.placeholder = t('searchChats');
+      // Можно расширить по необходимости
     }
 
     /* ==========================================================================
@@ -1099,15 +1205,15 @@
         const bubble = document.createElement('div');
         bubble.className = `max-w-md px-3.5 py-2 rounded-xl text-xs md:text-sm relative ${
           msg.isSelf
-            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg'
-            : 'bg-slate-900 border border-slate-800 text-slate-200'
+            ? 'msg-bubble-self text-white'
+            : 'msg-bubble-other text-slate-200'
         }`;
 
         // Reply quote
         if (msg.replyTo) {
           const quote = document.createElement('div');
-          quote.className = 'mb-1.5 pl-2 border-l-2 border-cyan-400/60 text-[11px] opacity-80 cursor-pointer';
-          quote.innerHTML = `<div class="font-bold text-cyan-300">${escapeHtml(msg.replyTo.sender)}</div><div class="truncate">${escapeHtml(msg.replyTo.text?.slice(0, 80) || '')}</div>`;
+          quote.className = 'mb-2 pl-2.5 pr-2 py-1.5 rounded-md bg-black/30 border-l-2 border-cyan-400 text-[11px] cursor-pointer hover:bg-black/50 transition';
+          quote.innerHTML = `<div class="font-bold text-cyan-300 flex items-center gap-1"><i class="fas fa-reply text-[9px]"></i> ${escapeHtml(msg.replyTo.sender)}</div><div class="truncate text-slate-300 opacity-90">${escapeHtml(msg.replyTo.text?.slice(0, 90) || '[media]')}</div>`;
           quote.onclick = () => {
             const orig = document.querySelector(`[data-msg-id="${msg.replyTo.id}"]`);
             if (orig) {
@@ -1170,11 +1276,17 @@
             loadMediaInto(vid, msg.media.id, 'video');
             mediaDiv.appendChild(vid);
           } else if (msg.media.type === 'audio') {
+            const wrap = document.createElement('div');
+            wrap.className = 'cyber-audio-wrap';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-waveform-lines text-cyan-400 text-sm';
             const aud = document.createElement('audio');
             aud.controls = true;
             aud.dataset.mediaId = msg.media.id;
             loadMediaInto(aud, msg.media.id, 'audio');
-            mediaDiv.appendChild(aud);
+            wrap.appendChild(icon);
+            wrap.appendChild(aud);
+            mediaDiv.appendChild(wrap);
           } else if (msg.media.type === 'video-note') {
             const circle = document.createElement('div');
             circle.className = 'video-note-bubble';
@@ -1857,7 +1969,13 @@
         document.getElementById('callStatus').textContent = 'Waiting for peer... Share the link';
         // Обновляем URL
         history.replaceState(null, '', `#call=${currentRoomId}`);
-        toast(`Комната создана: ${currentRoomId}. Отправьте ссылку собеседнику.`, 'success', 6000);
+        const copyBtn = document.getElementById('copyCallLinkBtn');
+        copyBtn.classList.remove('hidden');
+        copyBtn.onclick = () => {
+          const link = location.origin + location.pathname + `#call=${currentRoomId}`;
+          navigator.clipboard.writeText(link).then(() => toast('Ссылка скопирована! Открой во второй вкладке', 'success'));
+        };
+        toast(`Комната создана: ${currentRoomId}. Нажми COPY ROOM LINK и открой во второй вкладке.`, 'success', 7000);
       } catch (err) {
         console.error(err);
         document.getElementById('callStatus').textContent = 'Permission denied or hardware error';
@@ -2209,6 +2327,7 @@
       document.getElementById('settingsMatrixRain').checked = s.matrixRain !== false;
       document.getElementById('settingsReducedMotion').checked = !!s.reducedMotion;
       document.getElementById('settingsSounds').checked = s.sounds !== false;
+      document.getElementById('settingsLanguage').value = s.language || 'ru';
       document.getElementById('settingsModal').classList.remove('hidden');
     });
     document.getElementById('closeSettingsBtn').addEventListener('click', () => {
@@ -2225,11 +2344,14 @@
       s.matrixRain = document.getElementById('settingsMatrixRain').checked;
       s.reducedMotion = document.getElementById('settingsReducedMotion').checked;
       s.sounds = document.getElementById('settingsSounds').checked;
+      s.language = document.getElementById('settingsLanguage').value || 'ru';
       matrixActive = s.matrixRain;
       document.body.classList.toggle('reduced-motion', s.reducedMotion);
+      applyLanguage(s.language);
       saveSettings(s);
       saveState();
       document.getElementById('settingsModal').classList.add('hidden');
+      toast('Настройки сохранены / Settings saved', 'success');
     });
 
     document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -2403,6 +2525,8 @@
     }
 
     openIDB().then(() => {
+      const s = loadSettings();
+      applyLanguage(s.language || 'ru');
       renderChatList();
       renderMessages();
       renderStories();
