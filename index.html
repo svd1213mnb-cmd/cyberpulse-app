@@ -1,39 +1,37 @@
-    function renderMessages(forceScroll = false) {
-      if (!messageFeedEl) return; 
-      
+        function renderMessages(forceScroll = false) {
+      if (!messageFeedEl) return;
       const isAtBottom = messageFeedEl.scrollHeight - messageFeedEl.scrollTop - messageFeedEl.clientHeight < 150;
       
-      // Очистка взорванных сообщений из памяти
-      if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = [];
-      state.messages[state.activeChatId] = state.messages[state.activeChatId].filter(msg => {
-        if (msg.secret && msg.expiresAt && Date.now() > msg.expiresAt) {
-          return false; 
-        }
-        return true;
-      });
-      saveState();
+      // ФИЛЬТР: удаляем взорвавшиеся сообщения из памяти
+      if (state.messages[state.activeChatId]) {
+        state.messages[state.activeChatId] = state.messages[state.activeChatId].filter(msg => {
+          if (msg.secret && msg.expiresAt && Date.now() > msg.expiresAt) {
+            return false; // Сообщение взорвалось, удаляем из массива
+          }
+          return true;
+        });
+      }
 
-      messageFeedEl.innerHTML = ''; 
+      messageFeedEl.innerHTML = '';
       const currentMsgs = state.messages[state.activeChatId] || [];
-      
+
       currentMsgs.forEach(msg => {
-        // Таймер на исчезновение
+        // Таймер для оставшихся секретных сообщений
         if (msg.secret && msg.expiresAt && Date.now() <= msg.expiresAt) {
           setTimeout(() => renderMessages(), msg.expiresAt - Date.now() + 100);
         }
 
-        const wrap = document.createElement('div'); 
-        wrap.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 group relative w-full mb-3`; 
+        const wrap = document.createElement('div');
+        wrap.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 group relative w-full mb-3`;
         wrap.dataset.msgId = msg.id;
         
-        const meta = document.createElement('span'); 
-        meta.className = 'text-[10px] text-slate-500 code-font px-1'; 
+        const meta = document.createElement('span');
+        meta.className = 'text-[10px] text-slate-500 code-font px-1';
         meta.textContent = `${msg.sender} • ${formatTime(msg.timestamp)}`;
         
-        const bubble = document.createElement('div'); 
-        
-        // ЖЕСТКАЯ КРАСНАЯ РАМКА ДЛЯ ТЕЛЕФОНА И ПК
-        const secretClass = msg.secret ? '!border-2 !border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]' : '';
+        const bubble = document.createElement('div');
+        // ДОБАВЛЯЕМ КРАСНУЮ РАМКУ, ЕСЛИ СООБЩЕНИЕ СЕКРЕТНОЕ
+        const secretClass = msg.secret ? 'border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]' : '';
         bubble.className = `max-w-[85%] md:max-w-md px-3.5 py-2 rounded-xl text-sm relative ${msg.isSelf ? 'msg-bubble-self text-white' : 'msg-bubble-other text-slate-200'} ${secretClass}`;
-        
-        // ... дальше идет твой старый код (if (msg.replyTo) и т.д.)
+
+       
