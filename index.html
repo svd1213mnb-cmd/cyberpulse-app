@@ -1115,6 +1115,8 @@
           
           if (msg.media.type === 'image') { 
             const img = document.createElement('img'); 
+          }
+          
             loadMediaInto(img, msg.media.id, 'image'); 
             img.onclick = () => openMediaViewer(msg.media.id, 'image'); 
             mediaDiv.appendChild(img); 
