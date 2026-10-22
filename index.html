@@ -192,7 +192,7 @@
       height: 100vh;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.15;
+      opacity: 1;
     }
 
     /* Скроллбары */
@@ -518,6 +518,21 @@
   .view-section.active {
     display: flex;
   }
+      /* Анимация появления сообщений */
+    @keyframes message-appear {
+        0% {
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .msg-animate {
+        animation: message-appear 0.3s ease-out forwards;
+    }
 </style>
 </head>
 
@@ -770,9 +785,7 @@
               <button type="button" id="secretMsgBtn"
                 class="p-2 text-slate-400 hover:text-red-500 shrink-0 transition-colors" title="Self-Destruct Message">
                 <i class="fas fa-bomb"></i>
-              </button>
-              <i class="fas fa-poll-h"></i>
-              </button>
+
             </div>
 
             <!-- Поле ввода и кнопка отправки -->
@@ -1440,7 +1453,8 @@
       return t;
     }
 
-    // --- Отрисовка ленты сообщений ---
+       // --- Отрисовка ленты сообщений ---  
+           // --- Отрисовка ленты сообщений ---
     function renderMessages(forceScroll = false) {
       if (!messageFeedEl) return;
 
@@ -1463,8 +1477,13 @@
           setTimeout(() => renderMessages(), msg.expiresAt - Date.now() + 100);
         }
 
-        const wrap = document.createElement('div');
-        wrap.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 group relative w-full mb-3`;
+                const wrap = document.createElement('div');
+        
+        // Проверяем: если сообщение отправлено менее 2 секунд назад — анимируем его
+        const isNewMessage = (Date.now() - msg.timestamp) < 2000; 
+        const animationClass = isNewMessage ? 'msg-animate' : '';
+        
+        wrap.className = `flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'} space-y-1 group relative w-full mb-3 ${animationClass}`;
         wrap.dataset.msgId = msg.id;
 
         const meta = document.createElement('span');
@@ -1596,7 +1615,7 @@
           bubble.appendChild(mediaDiv);
         }
 
-        // Реакции
+        // Реакции (Смайлики)
         if (msg.reactions && Object.keys(msg.reactions).length) {
           const reactRow = document.createElement('div');
           reactRow.className = 'flex flex-wrap mt-1';
@@ -1611,9 +1630,22 @@
           bubble.appendChild(reactRow);
         }
 
+        // Ховер-реакции для ПК
+        const hoverReact = document.createElement('div');
+        hoverReact.className = 'absolute -top-3 right-0 hidden group-hover:flex items-center gap-1 bg-slate-800 rounded-full px-2 py-1 shadow-lg border border-slate-600';
+        ['👍', '🔥', '⚡', '😂', '❤️'].forEach(em => {
+          const b = document.createElement('button');
+          b.className = 'text-sm hover:scale-125 transition';
+          b.textContent = em;
+          b.onclick = (e) => { e.stopPropagation(); toggleReaction(msg.id, em); };
+          hoverReact.appendChild(b);
+        });
+        wrap.appendChild(hoverReact);
+
         wrap.appendChild(meta);
         wrap.appendChild(bubble);
 
+        // События для вызова контекстного меню (ПКМ или долгий тап на мобилке)
         wrap.oncontextmenu = (e) => showContextMenu(e, msg);
         let pressTimer;
         wrap.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => showContextMenu(e.touches[0] || e, msg), 500); }, { passive: true });
@@ -1621,156 +1653,13 @@
         wrap.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
         messageFeedEl.appendChild(wrap);
-      });
+      }); // <--- ЗДЕСЬ ЗАКРЫВАЕТСЯ ЦИКЛ currentMsgs.forEach
 
+      // Умный скролл (выполняется один раз после отрисовки всех сообщений)
       if (isAtBottom || forceScroll) {
         messageFeedEl.scrollTop = messageFeedEl.scrollHeight;
       }
-
-      if
-            loadMediaInto(img, msg.media.id, 'image');
-      img.onclick = () => openMediaViewer(msg.media.id, 'image');
-      mediaDiv.appendChild(img); 
-           else if (msg.media.type === 'video') {
-        const vid = document.createElement('video');
-        vid.controls = true;
-        loadMediaInto(vid, msg.media.id, 'video');
-        mediaDiv.appendChild(vid);
-      } else if (msg.media.type === 'audio') {
-        const w = document.createElement('div');
-        w.className = 'custom-audio';
-
-        const btn = document.createElement('button');
-        btn.innerHTML = '<i class="fas fa-play"></i>';
-
-        const track = document.createElement('div');
-        track.className = 'progress-track';
-        const fill = document.createElement('div');
-        fill.className = 'progress-fill';
-        track.appendChild(fill);
-
-        const time = document.createElement('span');
-        time.className = 'time-display';
-        time.textContent = '0:00';
-
-        const aud = document.createElement('audio');
-        aud.className = 'hidden';
-        loadMediaInto(aud, msg.media.id, 'audio');
-
-        btn.onclick = () => {
-          if (aud.paused) {
-            aud.play();
-            btn.innerHTML = '<i class="fas fa-pause"></i>';
-          } else {
-            aud.pause();
-            btn.innerHTML = '<i class="fas fa-play"></i>';
-          }
-        };
-
-        aud.onended = () => {
-          btn.innerHTML = '<i class="fas fa-play"></i>';
-          fill.style.width = '0%';
-        };
-
-        aud.ontimeupdate = () => {
-          if (aud.duration) {
-            const percent = (aud.currentTime / aud.duration) * 100;
-            fill.style.width = percent + '%';
-            const m = Math.floor(aud.currentTime / 60);
-            const s = Math.floor(aud.currentTime % 60);
-            time.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-          }
-        };
-
-        track.onclick = (e) => {
-          const rect = track.getBoundingClientRect();
-          const pos = (e.clientX - rect.left) / rect.width;
-          if (aud.duration) aud.currentTime = pos * aud.duration;
-        };
-
-        w.appendChild(btn);
-        w.appendChild(track);
-        w.appendChild(time);
-        w.appendChild(aud);
-        mediaDiv.appendChild(w);
-      } else if (msg.media.type === 'video-note') {
-        const circle = document.createElement('div');
-        circle.className = 'video-note-bubble';
-        const vid = document.createElement('video');
-        vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
-        loadMediaInto(vid, msg.media.id, 'video');
-        circle.appendChild(vid);
-        circle.onclick = () => openMediaViewer(msg.media.id, 'video');
-        mediaDiv.appendChild(circle);
-
-      } else {
-        const a = document.createElement('a');
-        a.href = '#';
-        a.className = 'text-cyan-400 underline text-xs flex items-center gap-1';
-        a.innerHTML = `<i class="fas fa-file"></i> ${msg.media.name || 'file'}`;
-        a.onclick = async (e) => {
-          e.preventDefault();
-          const blob = await idbGet(msg.media.id);
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url; link.download = msg.media.name || 'file'; link.click();
-            URL.revokeObjectURL(url);
-          }
-        };
-        mediaDiv.appendChild(a);
-      }
-      bubble.appendChild(mediaDiv);
-    }
-
-    // 5. Реакции (Смайлики)
-    if (msg.reactions && Object.keys(msg.reactions).length) {
-      const reactRow = document.createElement('div');
-      reactRow.className = 'flex flex-wrap mt-1';
-      Object.entries(msg.reactions).forEach(([emoji, users]) => {
-        if (!users || !users.length) return;
-        const chip = document.createElement('span');
-        chip.className = `reaction-chip ${users.includes(state.currentUser) ? 'mine' : ''}`;
-        chip.textContent = `${emoji} ${users.length}`;
-        chip.onclick = () => toggleReaction(msg.id, emoji);
-        reactRow.appendChild(chip);
-      });
-      bubble.appendChild(reactRow);
-    }
-
-    // 6. Ховер-реакции для ПК
-    const hoverReact = document.createElement('div');
-    hoverReact.className = 'absolute -top-3 right-0 hidden group-hover:flex gap-1 bg-slate-900 border border-slate-700 rounded-full px-1.5 py-0.5 shadow-lg z-10';
-    ['👍', '🔥', '⚡', '💀', '❤️'].forEach(em => {
-      const b = document.createElement('button');
-      b.className = 'text-sm hover:scale-125 transition';
-      b.textContent = em;
-      b.onclick = (e) => { e.stopPropagation(); toggleReaction(msg.id, em); };
-      hoverReact.appendChild(b);
-    });
-    wrap.appendChild(hoverReact);
-
-    wrap.appendChild(meta);
-    wrap.appendChild(bubble);
-
-    // События для вызова контекстного меню (ПКМ или долгий тап на мобилке)
-    wrap.oncontextmenu = (e) => showContextMenu(e, msg);
-    let pressTimer;
-    wrap.addEventListener('touchstart', (e) => {
-      pressTimer = setTimeout(() => showContextMenu(e.touches[0] || e, msg), 500);
-    }, { passive: true });
-    wrap.addEventListener('touchend', () => clearTimeout(pressTimer));
-    wrap.addEventListener('touchmove', () => clearTimeout(pressTimer));
-
-    messageFeedEl.appendChild(wrap);
-      });
-
-    // Умный скролл: если пользователь был внизу или это принудительный скролл
-    if (isAtBottom || forceScroll) {
-      messageFeedEl.scrollTop = messageFeedEl.scrollHeight;
-    }
-    }
-
+    } // <--- ЗДЕСЬ ЗАКРЫВАЕТСЯ САМА ФУНКЦИЯ renderMessages
     // --- Загрузка медиа-файлов из IndexedDB ---
     async function loadMediaInto(el, mediaId, kind) {
       try {
@@ -3229,7 +3118,7 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Цвет берем из текущей темы
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-neon').trim() || '#00f0ff';
+        ctx.fillStyle =  '#00ff41';
         ctx.font = `14px 'Fira Code', monospace`;
 
         for (let i = 0; i < drops.length; i++) {
