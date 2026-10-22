@@ -402,6 +402,10 @@
               <button type="button" id="voiceRecordBtn" class="p-2 text-slate-400 hover:text-emerald-400 shrink-0" title="Record voice message">
                 <i class="fas fa-microphone"></i>
               </button>
+              <!-- Кнопка текстового диктофона -->
+              <button type="button" id="dictaphoneBtn" class="p-2 text-slate-400 hover:text-cyan-400 shrink-0 transition-colors" title="Голосовой ввод текста">
+                <i class="fas fa-microphone-alt"></i>
+              </button>
               <button type="button" id="videoNoteBtn" class="p-2 text-slate-400 hover:text-pink-400 shrink-0" title="Record video note">
                 <i class="fas fa-circle-dot"></i>
               </button>
@@ -629,6 +633,7 @@
           </select>
         </div>
         <!-- Тема -->
+              <!-- Блок с темами -->
         <div>
           <label id="labelTheme" class="text-xs text-slate-400 font-bold block mb-2">NEON COLOR THEME</label>
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -636,6 +641,20 @@
             <button data-theme="emerald" class="theme-btn p-2 rounded bg-slate-900 border border-emerald-400 text-emerald-400 font-bold">MATRIX EMERALD</button>
             <button data-theme="pink" class="theme-btn p-2 rounded bg-slate-900 border border-pink-400 text-pink-400 font-bold">SYNTH PINK</button>
             <button data-theme="amber" class="theme-btn p-2 rounded bg-slate-900 border border-amber-400 text-amber-400 font-bold">SOLAR AMBER</button>
+          </div>
+        </div>
+
+        <!-- ВСТАВЛЯЕШЬ СЮДА -->
+        <div class="pt-2 border-t border-slate-800">
+          <label class="text-xs text-slate-400 font-bold block mb-2">ОБОИ ДЛЯ ЧАТА</label>
+          <div class="flex gap-2">
+            <label class="flex-1 p-2 rounded bg-slate-900 border border-slate-600 text-slate-300 text-xs text-center cursor-pointer hover:border-cyan-400 transition">
+              <i class="fas fa-image mr-1"></i> Загрузить фото
+              <input type="file" id="bgUploadInput" class="hidden" accept="image/*">
+            </label>
+            <button id="resetBgBtn" class="px-3 py-2 rounded bg-slate-900 border border-red-500/50 text-red-400 text-xs hover:bg-red-500/10 transition" title="Сбросить обои">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
         </div>
         <!-- Переключатели -->
@@ -2769,11 +2788,148 @@ SoundEngine.playCallEnd();
         btn.classList.add('text-slate-400');
       }
     });
+    /* ==========================================================================
+       ГОЛОСОВОЙ ВВОД ТЕКСТА (DICTAPHONE)
+       ========================================================================== */
+    const dictaphoneBtn = document.getElementById('dictaphoneBtn');
+    let recognition = null;
+    let isListening = false;
 
+    // Проверяем, поддерживает ли браузер распознавание речи
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = 'ru-RU'; // Язык распознавания
+      recognition.continuous = false; 
+      recognition.interimResults = false;
+
+      // Когда начинаем слушать
+      recognition.onstart = () => {
+        isListening = true;
+        if (dictaphoneBtn) {
+          dictaphoneBtn.classList.add('text-red-500', 'animate-pulse');
+        }
+        if (messageInput) {
+          messageInput.placeholder = "Слушаю... Говорите.";
+        }
+      };
+
+      // Когда получили результат
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        if (messageInput) {
+          messageInput.value += (messageInput.value ? ' ' : '') + transcript;
+        }
+      };
+
+      // Обработка ошибок
+      recognition.onerror = (event) => {
+        if (event.error !== 'no-speech') {
+          toast('Ошибка распознавания: ' + event.error, 'error');
+        }
+      };
+
+      // Когда микрофон отключается
+      recognition.onend = () => {
+        isListening = false;
+        if (dictaphoneBtn) {
+          dictaphoneBtn.classList.remove('text-red-500', 'animate-pulse');
+        }
+        if (messageInput) {
+          messageInput.placeholder = t('placeholder') || "Передать сообщение...";
+        }
+      };
+
+      // Клик по кнопке
+      if (dictaphoneBtn) {
+        dictaphoneBtn.addEventListener('click', () => {
+          if (isListening) {
+            recognition.stop(); 
+          } else {
+            try {
+              recognition.start(); 
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        });
+      }
+    } else {
+      if (dictaphoneBtn) {
+        dictaphoneBtn.addEventListener('click', () => {
+          toast('Ваш браузер не поддерживает голосовой ввод', 'error');
+        });
+      }
+    }
+    /* ==========================================================================
+       КАСТОМНЫЕ ОБОИ ЧАТА
+       ========================================================================== */
+    const bgUploadInput = document.getElementById('bgUploadInput');
+    const resetBgBtn = document.getElementById('resetBgBtn');
+
+    // Функция применения обоев
+    async function applyChatBackground() {
+      const feed = document.getElementById('messageFeed');
+      if (!feed) return;
+
+      try {
+        // Ищем картинку в нашей базе IndexedDB
+        const bgBlob = await idbGet('custom_bg');
+        
+        if (bgBlob) {
+          const url = URL.createObjectURL(bgBlob);
+          // Добавляем темный градиент (85% прозрачности), чтобы текст легко читался
+          feed.style.backgroundImage = `linear-gradient(rgba(14, 22, 33, 0.85), rgba(14, 22, 33, 0.85)), url(${url})`;
+          feed.style.backgroundSize = 'cover';
+          feed.style.backgroundPosition = 'center';
+          feed.style.backgroundAttachment = 'local'; // Чтобы фон скроллился вместе с сообщениями
+        } else {
+          // Если картинки нет — убираем фон (остается стандартный черный)
+          feed.style.backgroundImage = 'none';
+        }
+      } catch (e) {
+        console.error('Ошибка загрузки обоев', e);
+      }
+    }
+
+    // Обработка загрузки нового фото
+    if (bgUploadInput) {
+      bgUploadInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Ограничение размера (макс 5 МБ)
+        if (file.size > 5 * 1024 * 1024) {
+          toast('Картинка слишком большая (макс. 5 МБ)', 'error');
+          return;
+        }
+        
+        // Сохраняем в базу и применяем
+        await idbPut('custom_bg', file);
+        await applyChatBackground();
+        toast('Обои установлены!', 'success');
+        e.target.value = ''; // Очищаем поле, чтобы можно было загрузить ту же картинку снова
+      });
+    }
+
+    // Обработка сброса обоев
+    if (resetBgBtn) {
+      resetBgBtn.addEventListener('click', async () => {
+        await idbDelete('custom_bg');
+        await applyChatBackground();
+        toast('Обои сброшены', 'success');
+      });
+    }
     window.onload = async () => {
        // ... твой код инициализации
       // 1. Открываем IndexedDB
       await openIDB(); 
+    window.onload = async () => {
+      await openIDB(); 
+      await applyChatBackground(); // <--- ДОБАВИТЬ ЭТУ СТРОЧКУ
+      
+      const s = loadSettings(); 
+      // ... остальной код
       
       // 2. Применяем настройки
       const s = loadSettings(); 
