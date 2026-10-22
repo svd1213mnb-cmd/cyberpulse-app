@@ -1,4 +1,1009 @@
-        function renderMessages(forceScroll = false) {
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CYBER_PULSE MATRIX</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: { black: '#08090f', dark: '#0f111a', card: 'rgba(18, 22, 36, 0.75)', border: 'rgba(0, 240, 255, 0.2)', cyan: '#00f0ff', emerald: '#10b981', pink: '#ff007f', amber: '#f59e0b', purple: '#9333ea' },
+            app: { bg: '#0e1621', panel: '#17212b', hover: '#202b36', text: '#ffffff', muted: '#708499', accent: '#00f0ff' }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Icons & Firebase -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Rajdhani:wght@500;600;700&display=swap');
+
+    /* Сброс и базовые стили */
+    body {
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #05060a;
+      color: #e2e8f0;
+      overflow: hidden;
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-font { font-family: 'Fira Code', monospace; }
+
+       /* Цветовые темы */
+    :root {
+      --primary-neon: #00f0ff;
+      --primary-glow: rgba(0, 240, 255, 0.4);
+      --bg-glass: rgba(13, 17, 28, 0.85);
+      --border-neon: rgba(0, 240, 255, 0.25);
+      --bg-main: #05060a;
+      --input-bg: rgba(15, 23, 42, 0.9);
+    }
+    
+    .theme-emerald { 
+      --primary-neon: #10b981; 
+      --primary-glow: rgba(16, 185, 129, 0.4); 
+      --border-neon: rgba(16, 185, 129, 0.25); 
+      --bg-glass: rgba(6, 28, 16, 0.85); 
+      --bg-main: #041208; 
+      --input-bg: rgba(10, 46, 27, 0.9);
+    }
+    
+    .theme-pink { 
+      --primary-neon: #ff007f; 
+      --primary-glow: rgba(255, 0, 127, 0.4); 
+      --border-neon: rgba(255, 0, 127, 0.25); 
+      --bg-glass: rgba(28, 6, 18, 0.85); 
+      --bg-main: #12040b; 
+      --input-bg: rgba(46, 10, 30, 0.9);
+    }
+    
+    .theme-amber { 
+      --primary-neon: #f59e0b; 
+      --primary-glow: rgba(245, 158, 11, 0.4); 
+      --border-neon: rgba(245, 158, 11, 0.25); 
+      --bg-glass: rgba(28, 20, 6, 0.85); 
+      --bg-main: #120d04; 
+      --input-bg: rgba(46, 32, 10, 0.9);
+    }
+
+    /* ПРИМЕНЯЕМ ФОНЫ К ПАНЕЛЯМ (перебиваем Tailwind) */
+    body { background-color: var(--bg-main) !important; transition: background-color 0.3s; }
+    
+    /* Красим основные блоки интерфейса */
+    header, #appSidebar, #mainChatContainer, #aiDrawer, #composer, #chatSearchBox, .glass-panel {
+      background-color: var(--bg-glass) !important;
+      border-color: var(--border-neon) !important;
+    }
+    
+    /* Красим поля ввода и поиска */
+    input[type="text"], input[type="password"], select, #messageInput, #aiInput, #chatSearchInput {
+      background-color: var(--input-bg) !important;
+      border-color: var(--border-neon) !important;
+      color: #fff !important;
+    }
+    
+    .theme-emerald input, .theme-emerald select { background-color: #0a1a13 !important; border-color: #14532d !important; color: #d1fae5 !important; }
+    .theme-pink input, .theme-pink select { background-color: #1a0a13 !important; border-color: #831843 !important; color: #fbcfe8 !important; }
+    .theme-amber input, .theme-amber select { background-color: #1a140a !important; border-color: #78350f !important; color: #fde68a !important; }
+    .theme-emerald { --primary-neon: #10b981; --primary-glow: rgba(16, 185, 129, 0.4); --border-neon: rgba(16, 185, 129, 0.25); }
+    .theme-pink { --primary-neon: #ff007f; --primary-glow: rgba(255, 0, 127, 0.4); --border-neon: rgba(255, 0, 127, 0.25); }
+    .theme-amber { --primary-neon: #f59e0b; --primary-glow: rgba(245, 158, 11, 0.4); --border-neon: rgba(245, 158, 11, 0.25); }
+
+    /* Glassmorphism */
+    .glass-panel {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-neon);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    /* Неоновые элементы */
+    .neon-text { color: var(--primary-neon); text-shadow: 0 0 10px var(--primary-glow); }
+    .neon-button { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--primary-neon); color: var(--primary-neon); transition: all 0.2s; }
+    .neon-button:hover { background: var(--primary-neon); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
+
+    /* Матрица на фоне */
+    #matrixCanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; opacity: 0.15; }
+
+    /* Скроллбары */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(5, 6, 10, 0.8); }
+    ::-webkit-scrollbar-thumb { background: var(--primary-neon); border-radius: 2px; }
+
+    /* Безопасные зоны для iPhone (чтобы меню не перекрывалось) */
+    .safe-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .safe-pt { padding-top: env(safe-area-inset-top, 0px); }
+
+    /* Отключение анимаций */
+    .reduced-motion * { animation: none !important; transition: none !important; }
+  </style>
+</head>
+  <style>
+    /* Уведомления (Тосты) */
+    #toastContainer { position: fixed; top: 80px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { pointer-events: auto; min-width: 260px; max-width: 360px; padding: 10px 14px; border-radius: 10px; background: rgba(15, 17, 26, 0.95); border: 1px solid var(--border-neon); color: #e2e8f0; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); animation: toastIn 0.25s ease-out; }
+    .toast.error { border-color: #ef4444; }
+    .toast.success { border-color: #10b981; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* Пузыри сообщений (Базовые и мобильные) */
+    .msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 12px; position: relative; word-wrap: break-word; transition: background 0.2s; }
+    .msg-bubble-self { background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(59, 130, 246, 0.35)); border: 1px solid var(--primary-neon); box-shadow: 0 0 16px var(--primary-glow); border-bottom-right-radius: 4px; }
+    .msg-bubble-other { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(148, 163, 184, 0.25); border-bottom-left-radius: 4px; }
+    
+    /* Мобильные пузыри (упрощенные) */
+    @media (max-width: 768px) {
+      .msg-bubble-self { background: #2b5278; border: none; box-shadow: none; border-radius: 16px; border-bottom-right-radius: 4px; }
+      .msg-bubble-other { background: #182533; border: none; box-shadow: none; border-radius: 16px; border-bottom-left-radius: 4px; }
+    }
+
+    /* Медиа в сообщениях */
+    .msg-media img, .msg-media video { max-width: 280px; max-height: 240px; border-radius: 12px; cursor: pointer; border: 1px solid var(--border-neon); box-shadow: 0 0 12px var(--primary-glow); }
+    .msg-media audio { width: 240px; height: 40px; border-radius: 20px; filter: drop-shadow(0 0 6px var(--primary-glow)); }
+    
+     /* Кастомный аудио-плеер */
+    .custom-audio { display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-neon); border-radius: 20px; padding: 4px 12px; width: 200px; }
+    .custom-audio button { color: var(--primary-neon); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+    .custom-audio .progress-track { flex: 1; height: 4px; background: #334155; border-radius: 2px; cursor: pointer; position: relative; }
+    .custom-audio .progress-fill { height: 100%; background: var(--primary-neon); width: 0%; border-radius: 2px; pointer-events: none; }
+    .custom-audio .time-display { font-size: 10px; color: #94a3b8; font-family: 'Fira Code', monospace; width: 30px; text-align: right; }
+    
+    /* Видео-кружок */
+    .video-note-bubble { width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary-neon); box-shadow: 0 0 18px var(--primary-glow); cursor: pointer; }
+    .video-note-bubble video { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Адаптация медиа для телефонов */
+    @media (max-width: 768px) {
+      .msg-media img, .msg-media video { max-width: 220px; max-height: 220px; border: none; box-shadow: none; }
+      .cyber-audio-wrap { min-width: 200px; background: rgba(0,0,0,0.2); border: none; box-shadow: none; }
+      .video-note-bubble { width: 120px; height: 120px; border: none; box-shadow: none; }
+    }
+
+    /* Бар ответа (Reply) */
+    #replyBar { display: none; background: rgba(15, 23, 42, 0.9); border-top: 1px solid var(--border-neon); padding: 8px 12px; font-size: 11px; }
+    #replyBar.active { display: flex; }
+
+    /* Подсветка поиска */
+    .search-highlight { background: rgba(0, 240, 255, 0.35); border-radius: 2px; padding: 0 1px; }
+    .search-highlight.current { background: rgba(245, 158, 11, 0.55); }
+
+    /* Реакции (Смайлики под сообщением) */
+    .reaction-chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: 999px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); font-size: 11px; cursor: pointer; margin-right: 4px; margin-top: 4px; transition: transform 0.1s; }
+    .reaction-chip:active { transform: scale(0.9); }
+    .reaction-chip.mine { border-color: var(--primary-neon); background: rgba(0, 240, 255, 0.12); }
+
+    /* Индикатор записи голоса */
+    #recordingIndicator { display: none; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); border-top: 1px solid rgba(239, 68, 68, 0.4); font-size: 12px; color: #fca5a5; }
+    #recordingIndicator.active { display: flex; }
+    .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Мобильные переходы (Экраны) */
+    .view-section { display: none; flex-direction: column; height: 100%; width: 100%; }
+    .view-section.active { display: flex; }
+    
+ 
+  </style>
+</head>
+<body class="h-[100dvh] flex flex-col relative select-none">
+
+  <!-- Фоновый Canvas и уведомления -->
+  <canvas id="matrixCanvas"></canvas>
+  <div id="toastContainer"></div>
+  <!-- ================= ГЛАВНЫЙ КОНТЕЙНЕР ================= -->
+  <div class="relative z-10 flex flex-col h-full overflow-hidden">
+
+    <!-- ШАПКА -->
+    <header class="glass-panel h-16 px-4 md:px-6 flex items-center justify-between border-b shrink-0 safe-pt">
+      <div class="flex items-center space-x-3">
+     
+        
+        <div class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-black/60 border border-cyan-500/40">
+          <i class="fas fa-microchip text-lg neon-text"></i>
+        </div>
+        
+        <div>
+          <h1 class="text-xl font-bold tracking-wider text-white flex items-center gap-2">
+            CYBER_PULSE 
+            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/50 neon-text code-font hidden sm:inline">SECURE_NODE</span>
+          </h1>
+          <p class="text-[10px] text-slate-400 code-font hidden sm:block">FIREBASE SIGNALING // P2P MESH</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-1 sm:space-x-3">
+        <button id="toggleMatrixBtn" title="Toggle Matrix" class="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:border-cyan-400 hover:text-cyan-400 transition">
+          <i class="fas fa-terminal"></i>
+        </button>
+        <button id="openVoiceStageBtn" title="Voice Stage" class="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:border-emerald-400 hover:text-emerald-400 transition">
+          <i class="fas fa-podcast"></i>
+        </button>
+        <button id="openArcadeBtn" title="Arcade" class="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:border-amber-400 hover:text-amber-400 transition">
+          <i class="fas fa-gamepad"></i>
+        </button>
+        <button id="openAiDrawerBtn" title="Gemini AI" class="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-cyan-400 hover:border-cyan-400 transition flex items-center gap-1.5 px-3">
+          <i class="fas fa-brain animate-pulse"></i>
+          <span class="text-xs font-semibold hidden md:inline">AI_CORE</span>
+        </button>
+        <button id="openSettingsBtn" title="Settings" class="hidden md:flex p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white transition">
+          <i class="fas fa-sliders-h"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ -->
+    <div id="pinnedBanner" class="hidden glass-panel px-4 py-2 border-b border-cyan-500/30 flex justify-between items-center text-xs text-cyan-200 bg-cyan-950/30 shrink-0">
+      <div class="flex items-center space-x-3 overflow-hidden">
+        <i class="fas fa-thumbtack text-cyan-400 animate-bounce"></i>
+        <div class="truncate cursor-pointer" id="pinnedBannerText">
+          <span id="pinnedPrefix" class="font-bold text-cyan-400">PINNED:</span> <span id="pinnedBannerContent">System initialization complete.</span>
+        </div>
+      </div>
+      <button id="unpinBtn" class="text-slate-400 hover:text-white p-1 ml-2"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+      <!-- ЛЕВАЯ ПАНЕЛЬ (САЙДБАР / НА МОБИЛКЕ СПИСОК ЧАТОВ) -->
+      <aside id="appSidebar" class="absolute md:relative z-20 w-full md:w-80 h-full glass-panel border-r flex flex-col transition-transform duration-300">
+        
+        <!-- 1. STORIES -->
+        <div class="p-3 border-b border-slate-800 bg-slate-950/40 shrink-0">
+          <div class="text-[11px] font-bold tracking-wider text-slate-400 mb-2 flex justify-between items-center">
+            <span id="storiesTitle">NETWORK STORIES</span>
+            <button id="addStoryBtn" class="text-xs text-cyan-400 hover:underline"><i class="fas fa-plus"></i> <span id="addStoryLabel">ADD</span></button>
+          </div>
+          <div id="storiesContainer" class="flex space-x-3 overflow-x-auto pb-1">
+            <!-- Сюда рендерятся истории -->
+          </div>
+        </div>
+
+        <!-- 2. ПОИСК ЧАТОВ -->
+        <div class="p-3 border-b border-slate-800 shrink-0">
+          <div class="relative">
+            <i class="fas fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            <input type="text" id="chatSearchInput" placeholder="Filter node channels or DMs..." class="w-full bg-slate-900/90 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 code-font">
+          </div>
+        </div>
+
+        <!-- 3. ТАБЫ -->
+        <div class="flex border-b border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/60 shrink-0">
+          <button id="tabGlobal" class="flex-1 py-2 text-center border-b-2 border-cyan-400 text-cyan-400">CHANNELS</button>
+          <button id="tabDM" class="flex-1 py-2 text-center border-b-2 border-transparent hover:text-slate-200">DIRECT (DM)</button>
+        </div>
+        <!-- 4. СПИСОК ЧАТОВ (Контейнер для рендера) -->
+        <div id="chatList" class="flex-1 overflow-y-auto divide-y divide-slate-800/40">
+          <!-- Сюда динамически вставляются чаты -->
+        </div>
+
+        <!-- 5. ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ (Низ сайдбара) -->
+        <div class="p-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0 safe-pb">
+          <div class="flex items-center space-x-2.5">
+            <div class="relative">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white text-xs" id="userAvatar">OP</div>
+              <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black"></span>
+            </div>
+            <div>
+              <div id="userCallsign" class="text-xs font-bold text-slate-200 code-font">CALLSIGN</div>
+              <div id="nodeStatus" class="text-[10px] text-emerald-400 code-font">NODE_CONNECTED</div>
+            </div>
+          </div>
+          <button id="copyPublicKeyBtn" title="Copy Public Key" class="text-slate-400 hover:text-cyan-400 p-1.5 text-xs">
+            <i class="fas fa-key"></i>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ЦЕНТРАЛЬНАЯ ЧАСТЬ (АКТИВНЫЙ ЧАТ) -->
+      <!-- На мобилке скрыта по умолчанию, открывается по клику -->
+      <main id="mainChatContainer" class="hidden md:flex flex-1 flex-col bg-black/40 relative">
+        
+        <!-- ШАПКА ЧАТА -->
+        <div class="h-14 border-b border-slate-800/80 px-4 md:px-6 flex items-center justify-between bg-slate-950/60 shrink-0">
+          <div class="flex items-center space-x-3">
+            <!-- Кнопка "Назад" для мобилок -->
+            <button id="mobileBackBtn" class="md:hidden text-cyan-400 p-2 -ml-2">
+              <i class="fas fa-arrow-left text-lg"></i>
+            </button>
+            
+            <div id="activeChatAvatar" class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center font-bold text-cyan-400 text-sm">#</div>
+            
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 id="activeChatName" class="font-bold text-slate-100 text-sm tracking-wide"># matrix-global</h2>
+                <span id="activeChatBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-300 font-mono hidden sm:inline">LOCAL</span>
+              </div>
+              <!-- Статус "печатает..." -->
+              <p id="typingStatus" class="text-[11px] text-cyan-400 h-3 italic font-mono"></p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-1 sm:space-x-2">
+            <button id="toggleChatSearchBtn" title="Search Messages" class="p-2 text-slate-400 hover:text-cyan-400 text-sm">
+              <i class="fas fa-search"></i>
+            </button>
+            <button id="startAudioCallBtn" title="Audio Call" class="p-2 text-slate-400 hover:text-emerald-400 text-sm">
+              <i class="fas fa-phone-alt"></i>
+            </button>
+            <button id="startVideoCallBtn" title="Video Call" class="p-2 text-slate-400 hover:text-cyan-400 text-sm">
+              <i class="fas fa-video"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ПАНЕЛЬ ПОИСКА ПО ЧАТУ (Скрыта по умолчанию) -->
+        <div id="chatSearchBox" class="hidden glass-panel px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs bg-slate-900/90 shrink-0">
+          <div class="flex items-center space-x-2 flex-1 max-w-md">
+            <i class="fas fa-search text-cyan-400"></i>
+            <input type="text" id="inChatSearchInput" placeholder="Search content..." class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-cyan-400">
+          </div>
+          <div class="flex items-center space-x-2">
+            <button id="searchPrevBtn" class="p-1 text-slate-400 hover:text-white"><i class="fas fa-chevron-up"></i></button>
+            <button id="searchNextBtn" class="p-1 text-slate-400 hover:text-white"><i class="fas fa-chevron-down"></i></button>
+            <span id="searchResultCount" class="text-slate-400 text-[11px] code-font">0</span>
+            <button id="closeSearchBtn" class="text-slate-400 hover:text-white p-1"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <!-- ЛЕНТА СООБЩЕНИЙ -->
+        <div id="messageFeed" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"></div>
+
+        <!-- ИНДИКАТОР ЗАПИСИ ГОЛОСА/ВИДЕО -->
+        <div id="recordingIndicator">
+          <div class="rec-dot"></div>
+          <span id="recordingTimer">00:00</span>
+          <span id="recordingTypeLabel">Recording...</span>
+          <button id="stopRecordingBtn" class="ml-auto px-3 py-1 rounded bg-red-600 text-white text-xs font-bold">STOP</button>
+        </div>
+
+        <!-- ПРЕВЬЮ ПРИКРЕПЛЕННОГО ФАЙЛА -->
+        <div id="attachmentPreview" class="hidden p-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between text-xs text-cyan-300 shrink-0">
+          <span id="attachmentName" class="truncate code-font">file.png</span>
+          <button id="clearAttachmentBtn" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- ПАНЕЛЬ ОТВЕТА (REPLY) -->
+        <div id="replyBar" class="items-center justify-between gap-3 shrink-0">
+          <div class="flex-1 overflow-hidden">
+            <div class="text-cyan-400 text-[10px] font-bold">
+              <span id="replyPrefix">Replying to</span> <span id="replyToUser"></span>
+            </div>
+            <div id="replyToText" class="text-slate-300 truncate text-[11px]"></div>
+          </div>
+          <button id="cancelReplyBtn" class="text-slate-400 hover:text-white p-1"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- КОМПОЗЕР (ПАНЕЛЬ ВВОДА) -->
+        <div id="composer" class="p-2 md:p-4 border-t border-slate-800 bg-slate-950/90 shrink-0" safe-pb"> 
+          <form id="chatForm" class="flex flex-col gap-2">
+            <!-- Верхняя панель с инструментами -->
+            <div class="flex items-center gap-1 overflow-x-auto">
+              <label class="p-2 text-slate-400 hover:text-cyan-400 cursor-pointer shrink-0" title="Attach file">
+                <i class="fas fa-paperclip"></i>
+                <input type="file" id="fileInput" class="hidden" accept="image/*,video/*,audio/*,.pdf,.txt,.zip">
+              </label>
+              <button type="button" id="voiceRecordBtn" class="p-2 text-slate-400 hover:text-emerald-400 shrink-0" title="Record voice message">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <button type="button" id="videoNoteBtn" class="p-2 text-slate-400 hover:text-pink-400 shrink-0" title="Record video note">
+                <i class="fas fa-circle-dot"></i>
+              </button>
+              <button type="button" id="emojiPickerBtn" class="p-2 text-slate-400 hover:text-amber-400 shrink-0">
+                <i class="far fa-smile"></i>
+              </button>
+                            <button type="button" id="createPollBtn" class="p-2 text-slate-400 hover:text-purple-400 shrink-0" title="Create poll">
+                <i class="fas fa-poll-h"></i>
+              </button>
+              <button type="button" id="secretMsgBtn" class="p-2 text-slate-400 hover:text-red-500 shrink-0 transition-colors" title="Self-Destruct Message">
+                <i class="fas fa-bomb"></i>
+              </button>
+                <i class="fas fa-poll-h"></i>
+              </button>
+            </div>
+            
+            <!-- Поле ввода и кнопка отправки -->
+            <div class="flex items-center gap-2">
+              <input type="text" id="messageInput" enterkeyhint="send" placeholder="Transmit payload... (*bold*, _italic_, `code`)" autocomplete="off" class="min-w-0 flex-1 bg-slate-900/90 border border-slate-700/80 rounded-lg px-3 py-3 text-base text-slate-100 focus:outline-none focus:border-cyan-500 code-font select-text">
+              <button type="submit" id="sendBtn" class="neon-button shrink-0 h-12 px-4 rounded-lg text-sm font-bold tracking-wider">TX</button>
+            </div>
+          </form>
+        </div>
+      </main>
+      <!-- ПРАВАЯ ПАНЕЛЬ (GEMINI AI) -->
+      <aside id="aiDrawer" class="hidden lg:flex w-80 h-full glass-panel border-l flex-col transition-all duration-300">
+        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60 shrink-0">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-brain text-cyan-400 animate-pulse"></i>
+            <h3 id="aiTitle" class="font-bold text-xs tracking-wider text-slate-200">GEMINI_AI COMPANION</h3>
+          </div>
+          <button id="closeAiDrawerBtn" class="text-slate-400 hover:text-white text-xs"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="p-3 bg-cyan-950/20 border-b border-cyan-500/20 text-[11px] text-cyan-300 flex justify-between items-center shrink-0">
+          <span id="aiSubtitle">AI Chat Summarizer & Cyber Assistant</span>
+          <button id="summarizeChatBtn" class="px-2 py-0.5 rounded bg-cyan-600 text-black font-bold text-[10px]">SUMMARIZE</button>
+        </div>
+        
+        <!-- Лента чата с ИИ -->
+        <div id="aiFeed" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
+          <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-300">
+            <span class="text-cyan-400 font-bold block mb-1">GEMINI_AI:</span>
+            Greetings Operator. Введи Gemini API key в настройках, чтобы я начал отвечать по-настоящему.
+          </div>
+        </div>
+        
+        <!-- Поле ввода для ИИ -->
+        <div class="p-3 border-t border-slate-800 bg-slate-950 shrink-0">
+          <form id="aiForm" class="flex space-x-2">
+            <input type="text" id="aiInput" placeholder="Query Gemini AI..." class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 code-font">
+            <button type="submit" id="aiAskBtn" class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs">ASK</button>
+          </form>
+        </div>
+      </aside>
+
+    </div> <!-- Закрывает flex-1 flex overflow-hidden relative (рабочая область) -->
+  </div> <!-- Закрывает relative z-10 flex flex-col h-full overflow-hidden (главный контейнер) -->
+
+  <!-- ================= МОДАЛЬНЫЕ ОКНА ================= -->
+
+  <!-- 1. Emoji Picker -->
+  <div id="emojiModal" class="hidden absolute bottom-16 left-4 md:left-12 z-[200] w-64 glass-panel rounded-xl p-3 shadow-2xl border border-cyan-500/30">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-1 mb-2 text-xs font-bold text-slate-300">
+      <span>CYBER EMOJIS</span>
+      <button id="closeEmojiBtn" class="text-slate-400"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="grid grid-cols-5 gap-2 text-lg text-center cursor-pointer">
+      <span data-emoji="⚡">⚡</span><span data-emoji="☣️">☣️</span><span data-emoji="🛡️">🛡️</span>
+      <span data-emoji="👾">👾</span><span data-emoji="💀">💀</span><span data-emoji="🚀">🚀</span>
+      <span data-emoji="🔥">🔥</span><span data-emoji="🤖">🤖</span><span data-emoji="🌐">🌐</span>
+      <span data-emoji="🔒">🔒</span><span data-emoji="👍">👍</span><span data-emoji="❤️">❤️</span>
+      <span data-emoji="😂">😂</span><span data-emoji="👀">👀</span><span data-emoji="🎯">🎯</span>
+    </div>
+  </div>
+
+  <!-- 2. Poll Modal (Создание опроса) -->
+  <div id="pollModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+    <div class="w-full max-w-md glass-panel p-6 rounded-xl border border-cyan-500/40 space-y-4">
+      <h3 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+        <i class="fas fa-poll-h"></i> <span id="pollTitle">CREATE MATRIX VOTING POLL</span>
+      </h3>
+      <input type="text" id="pollQuestion" placeholder="Enter poll question..." class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+      <input type="text" id="pollOpt1" placeholder="Option 1" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
+      <input type="text" id="pollOpt2" placeholder="Option 2" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
+      <div class="flex justify-end space-x-2 pt-2">
+        <button id="cancelPollBtn" class="px-4 py-1.5 rounded bg-slate-800 text-slate-300 text-xs">Cancel</button>
+        <button id="submitPollBtn" class="neon-button px-4 py-1.5 rounded text-xs font-bold">LAUNCH POLL</button>
+      </div>
+    </div>
+  </div>
+  <!-- 3. WebRTC Call Overlay (Звонки) -->
+  <div id="callOverlay" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4">
+    <div class="w-full max-w-2xl glass-panel rounded-2xl p-6 border border-cyan-500/50 flex flex-col items-center space-y-4 relative">
+      <div class="text-center">
+        <h3 id="callTitle" class="text-lg font-bold text-cyan-400">ENCRYPTED WEBRTC LINK</h3>
+        <p id="callStatus" class="text-xs text-slate-400 font-mono">Establishing peer handshake...</p>
+        <p id="callRoomId" class="text-[10px] text-slate-500 font-mono mt-1"></p>
+        <button id="copyCallLinkBtn" class="mt-2 px-3 py-1 rounded neon-button text-[10px] font-bold hidden">
+          <i class="fas fa-link mr-1"></i> COPY ROOM LINK
+        </button>
+      </div>
+      
+      <!-- Видео окна (Локальное и Удаленное) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full h-64 bg-slate-950 rounded-xl overflow-hidden p-2 border border-slate-800">
+        <video id="localVideo" autoplay muted playsinline class="w-full h-full object-cover rounded-lg bg-slate-900 border border-cyan-500/30"></video>
+        <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover rounded-lg bg-slate-900 border border-emerald-500/30"></video>
+      </div>
+      
+      <!-- Управление звонком -->
+      <div class="flex items-center space-x-4 pt-2">
+        <button id="toggleAudioBtn" class="p-3 rounded-full bg-slate-800 text-white hover:bg-slate-700"><i class="fas fa-microphone"></i></button>
+        <button id="toggleVideoBtn" class="p-3 rounded-full bg-slate-800 text-white hover:bg-slate-700"><i class="fas fa-video"></i></button>
+        <button id="endCallBtn" class="p-3 rounded-full bg-red-600 text-white hover:bg-red-500 px-6 font-bold text-xs"><i class="fas fa-phone-slash mr-2"></i> END LINK</button>
+      </div>
+      
+      <div class="text-[10px] text-slate-500 text-center">
+        Отправь ссылку с <code class="text-cyan-400">#call=ROOM_ID</code> второму участнику
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Voice Stage Modal (Голосовая сцена) -->
+  <div id="voiceStageModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/85 p-4">
+    <div class="w-full max-w-xl glass-panel rounded-2xl p-6 border border-emerald-500/50 space-y-6">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+            <i class="fas fa-podcast"></i> MATRIX VOICE ROOM STAGE
+          </h3>
+          <p class="text-xs text-slate-400">Local audio stage (mesh requires signaling)</p>
+        </div>
+        <button id="closeVoiceStageBtn" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      
+      <!-- Сетка участников (заполняется скриптом) -->
+      <div id="stageSpeakers" class="grid grid-cols-3 gap-4 text-center"></div>
+      
+      <!-- Управление сценой -->
+      <div class="flex justify-between items-center pt-2">
+        <button id="raiseHandBtn" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300 text-xs hover:text-white"><i class="fas fa-hand"></i> Raise Hand</button>
+        <button id="joinStageBtn" class="neon-button px-4 py-1.5 rounded text-xs font-bold">JOIN STAGE</button>
+        <button id="leaveStageBtn" class="hidden px-3 py-1.5 rounded bg-red-700 text-white text-xs">LEAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Arcade Modal (Аркада) -->
+  <div id="arcadeModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4">
+    <div class="w-full max-w-3xl glass-panel rounded-2xl p-4 border border-amber-500/50 flex flex-col h-[550px]">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+        <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+          <i class="fas fa-gamepad"></i> PAC-MAN MATRIX ARCADE
+        </h3>
+        <button id="closeArcadeBtn" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex-1 bg-black rounded-xl overflow-hidden">
+        <iframe src="https://macek.github.io/google_pacman/" class="w-full h-full border-0" allow="autoplay"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Video Note Modal (Запись видео-кружков) -->
+  <div id="videoNoteModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4">
+    <div class="glass-panel p-6 rounded-2xl border border-pink-500/50 flex flex-col items-center space-y-4">
+      <h3 class="text-xs font-bold text-pink-400 tracking-wider">RECORD CIRCULAR VIDEO NOTE</h3>
+      
+      <!-- Круглый превью-экран -->
+      <div class="w-[180px] h-[180px] rounded-full overflow-hidden border-3 border-pink-500 relative bg-black shadow-[0_0_15px_rgba(255,0,127,0.4)]">
+        <video id="videoNotePreview" autoplay muted playsinline class="w-full h-full object-cover"></video>
+      </div>
+      
+      <!-- Кнопки управления -->
+      <div class="flex items-center space-x-3">
+        <button id="startVidRecordBtn" class="px-4 py-1.5 rounded bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs">RECORD</button>
+        <button id="stopVidRecordBtn" class="px-4 py-1.5 rounded bg-slate-800 text-slate-300 text-xs">CANCEL</button>
+      </div>
+      <p class="text-[10px] text-slate-500">Max 60 seconds</p>
+    </div>
+  </div>
+  <!-- 7. Story Viewer Modal (Просмотр историй) -->
+  <div id="storyViewerModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4">
+    <div class="relative w-full max-w-sm glass-panel rounded-2xl overflow-hidden border border-cyan-500/40 flex flex-col h-[500px]">
+      <div class="w-full bg-slate-800 h-1 flex gap-0.5 px-1 pt-1">
+        <div id="storyProgressBars" class="flex w-full gap-0.5"></div>
+      </div>
+      <div class="p-3 flex justify-between items-center text-xs text-slate-200">
+        <span id="storyAuthor" class="font-bold">Author</span>
+        <button id="closeStoryBtn" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex-1 bg-black relative flex items-center justify-center overflow-hidden" id="storyContentArea">
+        <img id="storyImage" src="" class="w-full h-full object-cover hidden">
+        <video id="storyVideo" class="w-full h-full object-cover hidden" playsinline></video>
+      </div>
+      <div class="absolute inset-y-0 left-0 w-1/3" id="storyPrevZone"></div>
+      <div class="absolute inset-y-0 right-0 w-1/3" id="storyNextZone"></div>
+    </div>
+  </div>
+
+  <!-- 8. Settings Modal (Настройки) -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/80 p-0 sm:p-4">
+    <div class="w-full max-w-md glass-panel rounded-t-2xl sm:rounded-2xl border border-cyan-500/40 max-h-[92vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-slate-800 px-4 py-3 shrink-0 bg-[#0d111c]">
+        <h3 id="settingsTitle" class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+          <i class="fas fa-sliders-h"></i> <span id="settingsTitleText">MATRIX NODE CONFIGURATION</span>
+        </h3>
+        <button id="closeSettingsBtn" type="button" class="w-11 h-11 rounded-lg border border-slate-600 text-slate-200 text-lg flex items-center justify-center" aria-label="Close">
+          <i class="fas fa-times pointer-events-none"></i>
+        </button>
+      </div>
+      <div class="p-4 space-y-5 overflow-y-auto">
+        <!-- Имя -->
+        <div>
+          <label id="labelDisplayName" class="text-xs text-slate-400 font-bold block mb-1">DISPLAY NAME</label>
+          <input type="text" id="settingsDisplayName" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200" placeholder="Operator_XXX">
+        </div>
+        <!-- Язык -->
+        <div>
+          <label class="text-xs text-slate-400 font-bold block mb-1">INTERFACE LANGUAGE</label>
+          <select id="settingsLanguage" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+            <option value="uk">Українська</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </div>
+        <!-- Тема -->
+        <div>
+          <label id="labelTheme" class="text-xs text-slate-400 font-bold block mb-2">NEON COLOR THEME</label>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button data-theme="cyan" class="theme-btn p-2 rounded bg-slate-900 border border-cyan-400 text-cyan-400 font-bold">CYAN NEON</button>
+            <button data-theme="emerald" class="theme-btn p-2 rounded bg-slate-900 border border-emerald-400 text-emerald-400 font-bold">MATRIX EMERALD</button>
+            <button data-theme="pink" class="theme-btn p-2 rounded bg-slate-900 border border-pink-400 text-pink-400 font-bold">SYNTH PINK</button>
+            <button data-theme="amber" class="theme-btn p-2 rounded bg-slate-900 border border-amber-400 text-amber-400 font-bold">SOLAR AMBER</button>
+          </div>
+        </div>
+        <!-- Переключатели -->
+        <div class="space-y-2 pt-2 border-t border-slate-800">
+          <label class="flex items-center justify-between text-xs text-slate-300">
+            <span id="labelMatrix">Matrix Rain</span>
+            <input type="checkbox" id="settingsMatrixRain" class="accent-cyan-500" checked>
+          </label>
+          <label class="flex items-center justify-between text-xs text-slate-300">
+            <span id="labelMotion">Reduced Motion</span>
+            <input type="checkbox" id="settingsReducedMotion" class="accent-cyan-500">
+          </label>
+          <label class="flex items-center justify-between text-xs text-slate-300">
+            <span id="labelSounds">Sound Effects</span>
+            <input type="checkbox" id="settingsSounds" class="accent-cyan-500" checked>
+          </label>
+        </div>
+        <!-- Gemini API -->
+        <div class="pt-2 border-t border-slate-800">
+          <label id="labelGemini" class="text-xs text-slate-400 font-bold block mb-1">GEMINI API KEY</label>
+          <input type="password" id="settingsGeminiKey" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200 code-font" placeholder="AIzaSy...">
+          <p id="geminiHint" class="text-[10px] text-slate-500 mt-1">Хранится только в localStorage. Получить: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400">aistudio.google.com</a></p>
+        </div>
+        <!-- Крипто -->
+        <div class="pt-2 border-t border-slate-800">
+          <label id="labelCrypto" class="text-xs text-slate-400 font-bold block mb-1">CRYPTO (obfuscation)</label>
+          <button id="regenKeysBtn" class="w-full p-2 rounded bg-slate-900 border border-red-500/50 text-red-400 text-xs font-mono">REGENERATE KEY PAIR</button>
+        </div>
+        <!-- Данные -->
+        <div class="pt-2 border-t border-slate-800 space-y-2">
+          <button id="exportChatsBtn" class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-slate-300 text-xs">Export chats (JSON)</button>
+          <button id="clearAllDataBtn" class="w-full p-2 rounded bg-slate-900 border border-red-500/50 text-red-400 text-xs">Clear all data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Context Menu (ПКМ / Долгий тап) -->
+  <div id="contextMenu" class="hidden absolute z-[300] w-44 glass-panel rounded-lg py-1 shadow-2xl border border-cyan-500/40 text-xs font-semibold text-slate-200">
+    <button data-action="reply" class="w-full text-left px-3 py-2 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-reply mr-2"></i><span id="ctxReply">Reply</span></button>
+    <button data-action="react" class="w-full text-left px-3 py-2 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-smile mr-2"></i><span id="ctxReact">React</span></button>
+    <button data-action="pin" class="w-full text-left px-3 py-2 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-thumbtack mr-2"></i><span id="ctxPin">Pin</span></button>
+    <button data-action="copy" class="w-full text-left px-3 py-2 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-copy mr-2"></i><span id="ctxCopy">Copy</span></button>
+    <button data-action="forward" class="w-full text-left px-3 py-2 hover:bg-cyan-500/20 hover:text-cyan-300"><i class="fas fa-share mr-2"></i><span id="ctxForward">Forward</span></button>
+    <button data-action="delete" class="w-full text-left px-3 py-2 hover:bg-red-500/20 hover:text-red-400 border-t border-slate-800"><i class="fas fa-trash mr-2"></i><span id="ctxDelete">Delete</span></button>
+  </div>
+
+  <!-- 10. Quick React Panel -->
+  <div id="quickReactPanel" class="hidden absolute z-[300] glass-panel rounded-full px-2 py-1 flex gap-1 shadow-xl border border-cyan-500/30">
+    <button data-emoji="👍" class="text-lg hover:scale-125 transition p-1">👍</button>
+    <button data-emoji="🔥" class="text-lg hover:scale-125 transition p-1">🔥</button>
+    <button data-emoji="⚡" class="text-lg hover:scale-125 transition p-1">⚡</button>
+    <button data-emoji="💀" class="text-lg hover:scale-125 transition p-1">💀</button>
+    <button data-emoji="❤️" class="text-lg hover:scale-125 transition p-1">❤️</button>
+  </div>
+
+  <!-- 11. Media Viewer (Полноэкранный просмотр) -->
+  <div id="mediaViewer" class="hidden fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4">
+    <button id="closeMediaViewer" class="absolute top-4 right-4 text-white text-2xl"><i class="fas fa-times"></i></button>
+    <img id="mediaViewerImg" class="max-w-full max-h-full hidden rounded-lg">
+    <video id="mediaViewerVideo" class="max-w-full max-h-full hidden rounded-lg" controls></video>
+  </div>
+
+  <!-- 12. Forward Modal (Пересылка) -->
+  <div id="forwardModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-black/80 p-4">
+    <div class="w-full max-w-sm glass-panel p-5 rounded-xl border border-cyan-500/40 space-y-3">
+      <h3 id="forwardTitle" class="text-sm font-bold text-cyan-400">Forward to...</h3>
+      <div id="forwardChatList" class="max-h-60 overflow-y-auto space-y-1"></div>
+      <button id="cancelForwardBtn" class="w-full py-1.5 rounded bg-slate-800 text-slate-300 text-xs">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ================= МОБИЛЬНОЕ НИЖНЕЕ МЕНЮ ================= -->
+  <!-- Видно только на телефонах (md:hidden) -->
+  <nav class="h-14 bg-[#17212b] border-t border-[#0e1621] flex justify-around items-center z-40 shrink-0 md:hidden safe-pb">
+    <button class="nav-btn flex flex-col items-center justify-center w-full h-full text-[#00f0ff]" data-target="viewChats">
+      <i class="fas fa-comment-alt text-lg mb-0.5"></i><span class="text-[10px] font-medium">Чаты</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center justify-center w-full h-full text-[#708499]" data-target="viewCalls">
+      <i class="fas fa-phone-alt text-lg mb-0.5"></i><span class="text-[10px] font-medium">Звонки</span>
+    </button>
+    <button class="nav-btn flex flex-col items-center justify-center w-full h-full text-[#708499]" data-target="viewSettings">
+      <i class="fas fa-cog text-lg mb-0.5"></i><span class="text-[10px] font-medium">Настройки</span>
+    </button>
+  </nav>
+  <!-- ================= СКРИПТЫ ================= -->
+  <script>
+    /* ==========================================================================
+       1. FIREBASE ИНТЕГРАЦИЯ
+       ========================================================================== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCOwnNn1MdC-JB2iwgv4PuuciqPHDR8EqA",
+      authDomain: "cyberpulse-b5ca4.firebaseapp.com",
+      databaseURL: "https://cyberpulse-b5ca4-default-rtdb.firebaseio.com",
+      projectId: "cyberpulse-b5ca4",
+      storageBucket: "cyberpulse-b5ca4.firebasestorage.app",
+      messagingSenderId: "640950603280",
+      appId: "1:640950603280:web:1db07a551a79c5ce274495",
+      measurementId: "G-FY1RSXM3C7"
+    };
+
+    let firebaseApp = null, firebaseDb = null, firebaseAuth = null;
+    try {
+      firebaseApp = firebase.initializeApp(firebaseConfig);
+      firebaseDb = firebase.database();
+      firebaseAuth = firebase.auth();
+      firebaseAuth.signInAnonymously().catch(e => console.warn('Anon auth failed', e));
+    } catch (e) { 
+      console.error('Firebase init error', e); 
+    }
+
+    /* ==========================================================================
+       2. ЛОКАЛИЗАЦИЯ (I18N)
+       ========================================================================== */
+    const i18n = {
+      ru: { stories: "ИСТОРИИ СЕТИ", add: "ДОБАВИТЬ", channels: "КАНАЛЫ", dm: "ЛИЧНЫЕ", searchChats: "Поиск каналов и личных...", searchMsgs: "Поиск по сообщениям...", placeholder: "Передать сообщение... (*жирный*, _курсив_, `код`)", pinned: "ЗАКРЕПЛЕНО:", reply: "Ответ", node: "УЗЕЛ_ПОДКЛЮЧЁН", matches: "совпад.", rec: "Запись...", stop: "СТОП", voice: "Голосовое...", aiTitle: "GEMINI_AI КОМПАНЬОН", aiSub: "Сводка чата и кибер-ассистент", summarize: "СВОДКА", ask: "СПРОСИТЬ", aiPlaceholder: "Запрос к Gemini...", settingsTitle: "НАСТРОЙКИ УЗЛА", displayName: "ИМЯ", language: "ЯЗЫК ИНТЕРФЕЙСА", theme: "НЕОНОВАЯ ТЕМА", matrixRain: "Дождь Matrix", reducedMotion: "Меньше анимации", sounds: "Звуки", geminiKey: "КЛЮЧ GEMINI API", geminiHint: "Хранится только в браузере. Получить:", crypto: "КРИПТО (обфускация)", regen: "СГЕНЕРИРОВАТЬ КЛЮЧИ ЗАНОВО", exportChats: "Экспорт чатов (JSON)", clearData: "Очистить все данные", ctxReply: "Ответить", ctxReact: "Реакция", ctxPin: "Закрепить", ctxCopy: "Копировать", ctxForward: "Переслать", ctxDelete: "Удалить", forwardTitle: "Переслать в...", cancel: "Отмена", pollTitle: "СОЗДАТЬ ОПРОС", pollQ: "Вопрос опроса...", opt1: "Вариант 1", opt2: "Вариант 2", launch: "ЗАПУСТИТЬ", nothing: "Ничего не найдено", typing: "печатает...", saved: "Настройки сохранены", copied: "Скопировано", forwarded: "Переслано" },
+      en: { stories: "NETWORK STORIES", add: "ADD", channels: "CHANNELS", dm: "DIRECT", searchChats: "Filter channels or DMs...", searchMsgs: "Search messages...", placeholder: "Transmit message... (*bold*, _italic_, `code`)", pinned: "PINNED:", reply: "Replying to", node: "NODE_ONLINE", matches: "matches", rec: "Recording...", stop: "STOP", voice: "Voice note...", aiTitle: "GEMINI_AI COMPANION", aiSub: "Chat summary and cyber assistant", summarize: "SUMMARIZE", ask: "ASK", aiPlaceholder: "Query Gemini AI...", settingsTitle: "NODE SETTINGS", displayName: "DISPLAY NAME", language: "INTERFACE LANGUAGE", theme: "NEON THEME", matrixRain: "Matrix Rain", reducedMotion: "Reduced motion", sounds: "Sounds", geminiKey: "GEMINI API KEY", geminiHint: "Stored only in this browser. Get one:", crypto: "CRYPTO (obfuscation)", regen: "REGENERATE KEY PAIR", exportChats: "Export chats (JSON)", clearData: "Clear all data", ctxReply: "Reply", ctxReact: "React", ctxPin: "Pin", ctxCopy: "Copy", ctxForward: "Forward", ctxDelete: "Delete", forwardTitle: "Forward to...", cancel: "Cancel", pollTitle: "CREATE POLL", pollQ: "Poll question...", opt1: "Option 1", opt2: "Option 2", launch: "LAUNCH", nothing: "Nothing found", typing: "is typing...", saved: "Settings saved", copied: "Copied", forwarded: "Forwarded" },
+      uk: { stories: "ІСТОРІЇ МЕРЕЖІ", add: "ДОДАТИ", channels: "КАНАЛИ", dm: "ОСОБИСТІ", searchChats: "Пошук каналів і особистих...", searchMsgs: "Пошук у повідомленнях...", placeholder: "Надіслати повідомлення... (*жирний*, _курсив_, `код`)", pinned: "ЗАКРІПЛЕНО:", reply: "Відповідь", node: "ВУЗОЛ_ОНЛАЙН", matches: "збігів", rec: "Запис...", stop: "СТОП", voice: "Голосове...", aiTitle: "GEMINI_AI КОМПАНЬЙОН", aiSub: "Підсумок чату та кібер-асистент", summarize: "ПІДСУМОК", ask: "ЗАПИТАТИ", aiPlaceholder: "Запит до Gemini...", settingsTitle: "НАЛАШТУВАННЯ ВУЗЛА", displayName: "ІМ'Я", language: "МОВА ІНТЕРФЕЙСУ", theme: "НЕОНОВА ТЕМА", matrixRain: "Дощ Matrix", reducedMotion: "Менше анімації", sounds: "Звуки", geminiKey: "КЛЮЧ GEMINI API", geminiHint: "Зберігається лише в браузері. Отримати:", crypto: "КРИПТО (обфускація)", regen: "ЗГЕНЕРУВАТИ КЛЮЧІ ЗНОВУ", exportChats: "Експорт чатів (JSON)", clearData: "Очистити всі дані", ctxReply: "Відповісти", ctxReact: "Реакція", ctxPin: "Закріпити", ctxCopy: "Копіювати", ctxForward: "Переслати", ctxDelete: "Видалити", forwardTitle: "Переслати в...", cancel: "Скасувати", pollTitle: "СТВОРИТИ ОПИТУВАННЯ", pollQ: "Питання...", opt1: "Варіант 1", opt2: "Варіант 2", launch: "ЗАПУСТИТИ", nothing: "Нічого не знайдено", typing: "друкує...", saved: "Налаштування збережено", copied: "Скопійовано", forwarded: "Переслано" },
+      de: { stories: "NETZWERK-STORIES", add: "HINZU", channels: "KANÄLE", dm: "DIREKT", searchChats: "Kanäle oder DMs filtern...", searchMsgs: "Nachrichten suchen...", placeholder: "Nachricht senden... (*fett*, _kursiv_, `code`)", pinned: "ANGEHEFTET:", reply: "Antwort an", node: "KNOTEN_ONLINE", matches: "Treffer", rec: "Aufnahme...", stop: "STOPP", voice: "Sprachnachricht...", aiTitle: "GEMINI_AI BEGLEITER", aiSub: "Chat-Zusammenfassung und Assistent", summarize: "ZUSAMMEN", ask: "FRAGEN", aiPlaceholder: "Gemini fragen...", settingsTitle: "KNOTEN-EINSTELLUNGEN", displayName: "ANZEIGENAME", language: "SPRACHE", theme: "NEON-THEMA", matrixRain: "Matrix-Regen", reducedMotion: "Weniger Bewegung", sounds: "Töne", geminiKey: "GEMINI API-SCHLÜSSEL", geminiHint: "Nur in diesem Browser gespeichert. Holen:", crypto: "KRYPTO (Verschleierung)", regen: "SCHLÜSSEL NEU ERZEUGEN", exportChats: "Chats exportieren (JSON)", clearData: "Alle Daten löschen", ctxReply: "Antworten", ctxReact: "Reaktion", ctxPin: "Anheften", ctxCopy: "Kopieren", ctxForward: "Weiterleiten", ctxDelete: "Löschen", forwardTitle: "Weiterleiten an...", cancel: "Abbrechen", pollTitle: "UMFRAGE ERSTELLEN", pollQ: "Frage...", opt1: "Option 1", opt2: "Option 2", launch: "STARTEN", nothing: "Nichts gefunden", typing: "schreibt...", saved: "Einstellungen gespeichert", copied: "Kopiert", forwarded: "Weitergeleitet" }
+    };
+    
+    let currentLang = "ru";
+    function t(key) { const pack = i18n[currentLang] || i18n.ru; return pack[key] || i18n.ru[key] || key; }
+    function setText(id, key) { const el = document.getElementById(id); if (el) el.textContent = t(key); }
+    function setPh(id, key) { const el = document.getElementById(id); if (el) el.placeholder = t(key); }
+    
+    function applyLanguage(lang) {
+      currentLang = i18n[lang] ? lang : "ru";
+      document.documentElement.lang = currentLang;
+      setText("storiesTitle", "stories"); setText("addStoryLabel", "add"); setText("tabGlobal", "channels"); setText("tabDM", "dm");
+      setPh("chatSearchInput", "searchChats"); setPh("inChatSearchInput", "searchMsgs"); setPh("messageInput", "placeholder"); setPh("aiInput", "aiPlaceholder");
+      setText("pinnedPrefix", "pinned"); setText("replyPrefix", "reply"); setText("nodeStatus", "node"); setText("aiTitle", "aiTitle"); setText("aiSubtitle", "aiSub"); setText("summarizeChatBtn", "summarize"); setText("aiAskBtn", "ask");
+      setText("settingsTitleText", "settingsTitle"); setText("labelDisplayName", "displayName"); setText("labelLanguage", "language"); setText("labelTheme", "theme");
+      setText("labelMatrix", "matrixRain"); setText("labelMotion", "reducedMotion"); setText("labelSounds", "sounds"); setText("labelGemini", "geminiKey"); setText("labelCrypto", "crypto"); setText("regenKeysBtn", "regen"); setText("exportChatsBtn", "exportChats"); setText("clearAllDataBtn", "clearData");
+      setText("ctxReply", "ctxReply"); setText("ctxReact", "ctxReact"); setText("ctxPin", "ctxPin"); setText("ctxCopy", "ctxCopy"); setText("ctxForward", "ctxForward"); setText("ctxDelete", "ctxDelete"); setText("forwardTitle", "forwardTitle"); setText("cancelForwardBtn", "cancel"); setText("cancelPollBtn", "cancel"); setText("submitPollBtn", "launch"); setPh("pollQuestion", "pollQ"); setPh("pollOpt1", "opt1"); setPh("pollOpt2", "opt2");
+      const hint = document.getElementById("geminiHint"); if (hint) hint.innerHTML = escapeHtml(t("geminiHint")) + ' <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-cyan-400">aistudio.google.com</a>';
+    }
+
+    /* ==========================================================================
+       3. УТИЛИТЫ
+       ========================================================================== */
+    function escapeHtml(str) { if (typeof str !== 'string') return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function toast(msg, type = 'info', duration = 3500) { const container = document.getElementById('toastContainer'); if(!container) return alert(msg); const el = document.createElement('div'); el.className = `toast ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`; el.textContent = msg; container.appendChild(el); setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, duration); }
+    function formatTime(ts) { return new Date(ts || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+    function uid() { return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+    /* ==========================================================================
+       4. INDEXEDDB ДЛЯ МЕДИА
+       ========================================================================== */
+    const IDB_NAME = 'CyberPulseMedia'; let idb = null;
+    function openIDB() { return new Promise((resolve, reject) => { const req = indexedDB.open(IDB_NAME, 1); req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('blobs')) req.result.createObjectStore('blobs'); }; req.onsuccess = () => { idb = req.result; resolve(idb); }; req.onerror = () => reject(req.error); }); }
+    async function idbPut(key, blob) { if (!idb) await openIDB(); return new Promise((resolve, reject) => { const tx = idb.transaction('blobs', 'readwrite'); tx.objectStore('blobs').put(blob, key); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); }); }
+    async function idbGet(key) { if (!idb) await openIDB(); return new Promise((resolve, reject) => { const tx = idb.transaction('blobs', 'readonly'); const req = tx.objectStore('blobs').get(key); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); }
+    async function idbDelete(key) { if (!idb) await openIDB(); return new Promise((resolve, reject) => { const tx = idb.transaction('blobs', 'readwrite'); tx.objectStore('blobs').delete(key); tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); }); }
+
+    /* ==========================================================================
+       5. СОСТОЯНИЕ (STATE) И LOCALSTORAGE
+       ========================================================================== */
+    const LS_KEY = 'cyberpulse_v28_state'; const LS_SETTINGS = 'cyberpulse_v28_settings';
+    function loadSettings() { try { return JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}'); } catch { return {}; } }
+    /* ==========================================================================
+       5.1 КИБЕР-ЗВУКИ (WEB AUDIO API)
+       ========================================================================== */
+      const SoundEngine = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      },
+      isEnabled() {
+        const s = loadSettings();
+        return s.sounds !== false;
+      },
+      playTransmit() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+      },
+      playReceive() {
+        if (!this.isEnabled()) return; this.init();
+        const playBeep = (freq, startTime, duration) => {
+          const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+          osc.type = 'sine'; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(startTime); osc.stop(startTime + duration);
+        };
+        playBeep(880, this.ctx.currentTime, 0.1);
+        playBeep(1200, this.ctx.currentTime + 0.12, 0.15);
+      },
+      playClick() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+      },
+      playError() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+      },
+      playCallStart() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+      },
+      playCallEnd() {
+        if (!this.isEnabled()) return; this.init();
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+      },
+      speak(text) {
+        if (!this.isEnabled()) return;
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const cleanText = text.replace(/[*_`#]/g, '');
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          utterance.lang = 'ru-RU';
+          utterance.rate = 1.1;
+          utterance.pitch = 0.8;
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    };
+    function loadState() { try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+    
+    // Сохранение состояния (не сохраняем медиа, только текст и метаданные)
+    function saveState() { 
+      const toSave = { currentUser: state.currentUser, activeChatId: state.activeChatId, chats: state.chats, messages: state.messages, stories: state.stories, viewedStories: state.viewedStories, pinned: state.pinned }; 
+      try { localStorage.setItem(LS_KEY, JSON.stringify(toSave)); } catch (e) { console.warn('localStorage quota', e); } 
+    }
+
+    // Дефолтные данные при первом запуске
+    const defaultChats = [
+      { id: 'global', name: '# matrix-global', type: 'channel', unread: 0 }, 
+      { id: 'dev-node', name: '# dev-talk', type: 'channel', unread: 0 }, 
+      { id: 'dm-ghost', name: 'Ghost_Zero', type: 'dm', unread: 0 }
+    ];
+    
+    const defaultMessages = { 
+      'global': [
+        { id: 'm1', sender: 'System', text: 'Node matrix stream initialized.', timestamp: Date.now() - 600000, isSelf: false, reactions: {} }, 
+        { id: 'm2', sender: 'Ghost_Zero', text: 'Greetings operator.', timestamp: Date.now() - 480000, isSelf: false, reactions: {} }
+      ], 
+      'dev-node': [{ id: 'm3', sender: 'DevCore', text: 'WebRTC ready.', timestamp: Date.now() - 900000, isSelf: false, reactions: {} }], 
+      'dm-ghost': [{ id: 'm4', sender: 'Ghost_Zero', text: 'Check voice stage.', timestamp: Date.now() - 300000, isSelf: false, reactions: {} }] 
+    };
+    
+    const defaultStories = [
+      { id: 's1', author: 'Matrix Central', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80', mediaUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80', type: 'image' }, 
+      { id: 's2', author: 'Operator X', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80', mediaUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=600&q=80', type: 'image' }
+    ];
+
+    // Инициализация объекта state
+    let state = { 
+      currentUser: 'Operator_' + Math.floor(100 + Math.random() * 900), 
+      activeChatId: 'global', 
+      selectedMessageForContext: null, 
+      replyTo: null, 
+      chats: defaultChats, 
+      messages: defaultMessages, 
+      stories: defaultStories, 
+      viewedStories: [], 
+      pinned: null, 
+      pendingAttachment: null,
+ secretMode: false, 
+      searchMatches: [], 
+      searchIndex: -1 
+    };
+
+    // Загрузка сохраненного состояния при старте
+    (function initState() {
+      const saved = loadState(); 
+      const settings = loadSettings();
+      
+      if (saved) { 
+        state.currentUser = saved.currentUser || state.currentUser; 
+        state.activeChatId = saved.activeChatId || 'global'; 
+        state.chats = saved.chats || defaultChats; 
+        state.messages = saved.messages || defaultMessages; 
+        state.stories = saved.stories || defaultStories; 
+        state.viewedStories = saved.viewedStories || []; 
+        state.pinned = saved.pinned || null; 
+      }
+      
+      if (settings.displayName) state.currentUser = settings.displayName;
+      if (settings.theme) document.body.classList.add('theme-' + settings.theme);
+      if (settings.reducedMotion) document.body.classList.add('reduced-motion');
+      if (settings.matrixRain === false) window.matrixActive = false;
+    })();
+    /* ==========================================================================
+       6. ОТРИСОВКА ИНТЕРФЕЙСА (РЕНДЕРИНГ)
+       ========================================================================== */
+    const chatListEl = document.getElementById('chatList'); 
+    const messageFeedEl = document.getElementById('messageFeed');
+
+    // --- Отрисовка списка чатов ---
+    function renderChatList(filter = '') {
+      if (!chatListEl) return; 
+      chatListEl.innerHTML = ''; 
+      const q = filter.trim().toLowerCase();
+      
+      state.chats.filter(c => !q || c.name.toLowerCase().includes(q)).forEach(chat => {
+        const item = document.createElement('div'); 
+        item.className = `p-3 flex items-center justify-between cursor-pointer transition border-b border-slate-800/40 ${state.activeChatId === chat.id ? 'bg-cyan-950/40 border-l-2 border-cyan-400' : 'hover:bg-slate-900/60'}`; 
+        
+        item.onclick = () => { 
+          switchChat(chat.id); 
+          // Мобильная логика: скрываем сайдбар и показываем чат
+          if (window.innerWidth < 768) {
+            document.getElementById('appSidebar')?.classList.add('hidden');
+            document.getElementById('mainChatContainer')?.classList.remove('hidden');
+            document.getElementById('mainChatContainer')?.classList.add('flex');
+          }
+        };
+        
+        item.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden">
+            <div class="w-8 h-8 md:w-7 md:h-7 rounded bg-slate-900 border border-slate-700 flex items-center justify-center text-xs font-bold ${chat.type === 'channel' ? 'text-cyan-400' : 'text-emerald-400'}">${chat.type === 'channel' ? '#' : 'DM'}</div>
+            <span class="text-sm md:text-xs font-medium text-slate-200 truncate code-font">${escapeHtml(chat.name)}</span>
+          </div>
+          ${chat.unread > 0 ? `<span class="px-1.5 py-0.5 rounded-full bg-cyan-500 text-black font-bold text-[10px]">${chat.unread}</span>` : ''}
+        `;
+        chatListEl.appendChild(item);
+      });
+    }
+
+    // --- Форматирование текста (Markdown) ---
+    function formatMessageText(text) { 
+      let t = escapeHtml(text); 
+      t = t.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+           .replace(/_(.*?)_/g, '<em>$1</em>')
+           .replace(/`(.*?)`/g, '<code class="bg-black/40 px-1 rounded text-cyan-300 font-mono">$1</code>')
+           .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-cyan-400 underline">$1</a>'); 
+      return t; 
+    }
+
+    // --- Отрисовка ленты сообщений ---
+       function renderMessages(forceScroll = false) {
       if (!messageFeedEl) return;
       const isAtBottom = messageFeedEl.scrollHeight - messageFeedEl.scrollTop - messageFeedEl.clientHeight < 150;
       
@@ -34,4 +1039,1777 @@
         const secretClass = msg.secret ? 'border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]' : '';
         bubble.className = `max-w-[85%] md:max-w-md px-3.5 py-2 rounded-xl text-sm relative ${msg.isSelf ? 'msg-bubble-self text-white' : 'msg-bubble-other text-slate-200'} ${secretClass}`;
 
+        // Дальше идет твой оригинальный код отрисовки (текст, медиа, реакции и т.д.)
+        // Вставь его сюда...
+        // 1. Ответ на сообщение (Quote)
+        if (msg.replyTo) { 
+          const quote = document.createElement('div'); 
+          quote.className = 'mb-2 pl-2.5 pr-2 py-1.5 rounded-md bg-black/30 border-l-2 border-cyan-400 text-[11px] cursor-pointer hover:bg-black/50 transition'; 
+          quote.innerHTML = `<div class="font-bold text-cyan-300 flex items-center gap-1"><i class="fas fa-reply text-[9px]"></i> ${escapeHtml(msg.replyTo.sender)}</div><div class="truncate text-slate-300 opacity-90">${escapeHtml(msg.replyTo.text?.slice(0, 90) || '[media]')}</div>`; 
+          quote.onclick = () => { 
+            const orig = document.querySelector(`[data-msg-id="${msg.replyTo.id}"]`); 
+            if (orig) { 
+              orig.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+              orig.classList.add('ring-2', 'ring-cyan-400'); 
+              setTimeout(() => orig.classList.remove('ring-2', 'ring-cyan-400'), 1500); 
+            } 
+          }; 
+          bubble.appendChild(quote); 
+        }
+
+        // 2. Текст сообщения
+        if (msg.text && !msg.poll && !msg.media) { 
+          const textDiv = document.createElement('div'); 
+          textDiv.className = 'msg-text'; 
+          textDiv.innerHTML = formatMessageText(msg.text); 
+          bubble.appendChild(textDiv); 
+        }
+
+        // 3. Опросы (Polls)
+        if (msg.poll) { 
+          const pollDiv = document.createElement('div'); 
+          pollDiv.className = 'space-y-2 w-full min-w-[200px]'; 
+          const total = (msg.poll.v1 || 0) + (msg.poll.v2 || 0) || 1; 
+          const p1 = Math.round(((msg.poll.v1 || 0) / total) * 100); 
+          const p2 = Math.round(((msg.poll.v2 || 0) / total) * 100); 
+          const voted = msg.poll.voters && msg.poll.voters[state.currentUser]; 
+          
+          pollDiv.innerHTML = `
+            <span class="font-bold text-cyan-300 block border-b border-cyan-500/30 pb-1">${escapeHtml(msg.poll.question)}</span>
+            <button data-poll-opt="1" class="w-full text-left p-1.5 rounded bg-black/40 hover:bg-cyan-500/20 text-xs relative overflow-hidden ${voted ? 'opacity-70 pointer-events-none' : ''}">
+              <div class="absolute inset-0 bg-cyan-500/20" style="width:${p1}%"></div><span class="relative">${escapeHtml(msg.poll.opt1)} — ${msg.poll.v1 || 0} (${p1}%)</span>
+            </button>
+            <button data-poll-opt="2" class="w-full text-left p-1.5 rounded bg-black/40 hover:bg-cyan-500/20 text-xs relative overflow-hidden ${voted ? 'opacity-70 pointer-events-none' : ''}">
+              <div class="absolute inset-0 bg-cyan-500/20" style="width:${p2}%"></div><span class="relative">${escapeHtml(msg.poll.opt2)} — ${msg.poll.v2 || 0} (${p2}%)</span>
+            </button>`; 
+          
+          pollDiv.querySelectorAll('[data-poll-opt]').forEach(btn => { 
+            btn.onclick = () => votePoll(msg.id, parseInt(btn.dataset.pollOpt)); 
+          }); 
+          bubble.appendChild(pollDiv); 
+        }
+
+        // 4. Медиа (Картинки, видео, аудио, файлы)
+        if (msg.media) { 
+          const mediaDiv = document.createElement('div'); 
+          mediaDiv.className = 'msg-media mt-1'; 
+          
+          if (msg.media.type === 'image') { 
+            const img = document.createElement('img'); 
+            loadMediaInto(img, msg.media.id, 'image'); 
+            img.onclick = () => openMediaViewer(msg.media.id, 'image'); 
+            mediaDiv.appendChild(img); 
+          } else if (msg.media.type === 'video') { 
+            const vid = document.createElement('video'); 
+            vid.controls = true; 
+            loadMediaInto(vid, msg.media.id, 'video'); 
+            mediaDiv.appendChild(vid); 
+                 } else if (msg.media.type === 'audio') { 
+          const w = document.createElement('div'); 
+          w.className = 'custom-audio';
+          
+          const btn = document.createElement('button');
+          btn.innerHTML = '<i class="fas fa-play"></i>';
+          
+          const track = document.createElement('div');
+          track.className = 'progress-track';
+          const fill = document.createElement('div');
+          fill.className = 'progress-fill';
+          track.appendChild(fill);
+          
+          const time = document.createElement('span');
+          time.className = 'time-display';
+          time.textContent = '0:00';
+          
+          const aud = document.createElement('audio');
+          aud.className = 'hidden';
+          loadMediaInto(aud, msg.media.id, 'audio');
+          
+          btn.onclick = () => {
+            if (aud.paused) { 
+              aud.play(); 
+              btn.innerHTML = '<i class="fas fa-pause"></i>'; 
+            } else { 
+              aud.pause(); 
+              btn.innerHTML = '<i class="fas fa-play"></i>'; 
+            }
+          };
+          
+          aud.onended = () => { 
+            btn.innerHTML = '<i class="fas fa-play"></i>'; 
+            fill.style.width = '0%'; 
+          };
+          
+          aud.ontimeupdate = () => {
+            if (aud.duration) {
+              const percent = (aud.currentTime / aud.duration) * 100;
+              fill.style.width = percent + '%';
+              const m = Math.floor(aud.currentTime / 60);
+              const s = Math.floor(aud.currentTime % 60);
+              time.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+            }
+          };
+          
+          track.onclick = (e) => {
+            const rect = track.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            if (aud.duration) aud.currentTime = pos * aud.duration;
+          };
+
+          w.appendChild(btn);
+          w.appendChild(track);
+          w.appendChild(time);
+          w.appendChild(aud);
+          mediaDiv.appendChild(w); 
+          } else if (msg.media.type === 'video-note') { 
+            const circle = document.createElement('div'); 
+            circle.className = 'video-note-bubble'; 
+            const vid = document.createElement('video'); 
+            vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true; 
+            loadMediaInto(vid, msg.media.id, 'video'); 
+            circle.appendChild(vid); 
+            circle.onclick = () => openMediaViewer(msg.media.id, 'video'); 
+            mediaDiv.appendChild(circle);
+ 
+          } else { 
+            const a = document.createElement('a'); 
+            a.href = '#'; 
+            a.className = 'text-cyan-400 underline text-xs flex items-center gap-1'; 
+            a.innerHTML = `<i class="fas fa-file"></i> ${msg.media.name || 'file'}`; 
+            a.onclick = async (e) => { 
+              e.preventDefault(); 
+              const blob = await idbGet(msg.media.id); 
+              if (blob) { 
+                const url = URL.createObjectURL(blob); 
+                const link = document.createElement('a'); 
+                link.href = url; link.download = msg.media.name || 'file'; link.click(); 
+                URL.revokeObjectURL(url); 
+              } 
+            }; 
+            mediaDiv.appendChild(a); 
+          } 
+          bubble.appendChild(mediaDiv); 
+        }
+
+        // 5. Реакции (Смайлики)
+        if (msg.reactions && Object.keys(msg.reactions).length) { 
+          const reactRow = document.createElement('div'); 
+          reactRow.className = 'flex flex-wrap mt-1'; 
+          Object.entries(msg.reactions).forEach(([emoji, users]) => { 
+            if (!users || !users.length) return; 
+            const chip = document.createElement('span'); 
+            chip.className = `reaction-chip ${users.includes(state.currentUser) ? 'mine' : ''}`; 
+            chip.textContent = `${emoji} ${users.length}`; 
+            chip.onclick = () => toggleReaction(msg.id, emoji); 
+            reactRow.appendChild(chip); 
+          }); 
+          bubble.appendChild(reactRow); 
+        }
+
+        // 6. Ховер-реакции для ПК
+        const hoverReact = document.createElement('div'); 
+        hoverReact.className = 'absolute -top-3 right-0 hidden group-hover:flex gap-1 bg-slate-900 border border-slate-700 rounded-full px-1.5 py-0.5 shadow-lg z-10'; 
+        ['👍','🔥','⚡','💀','❤️'].forEach(em => { 
+          const b = document.createElement('button'); 
+          b.className = 'text-sm hover:scale-125 transition'; 
+          b.textContent = em; 
+          b.onclick = (e) => { e.stopPropagation(); toggleReaction(msg.id, em); }; 
+          hoverReact.appendChild(b); 
+        }); 
+        wrap.appendChild(hoverReact);
+
+        wrap.appendChild(meta); 
+        wrap.appendChild(bubble);
+        
+        // События для вызова контекстного меню (ПКМ или долгий тап на мобилке)
+        wrap.oncontextmenu = (e) => showContextMenu(e, msg); 
+        let pressTimer; 
+        wrap.addEventListener('touchstart', (e) => { 
+          pressTimer = setTimeout(() => showContextMenu(e.touches[0] || e, msg), 500); 
+        }, { passive: true }); 
+        wrap.addEventListener('touchend', () => clearTimeout(pressTimer)); 
+        wrap.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        
+        messageFeedEl.appendChild(wrap);
+      });
+      
+      // Умный скролл: если пользователь был внизу или это принудительный скролл
+      if (isAtBottom || forceScroll) {
+        messageFeedEl.scrollTop = messageFeedEl.scrollHeight;
+      }
+    }
+
+    // --- Загрузка медиа-файлов из IndexedDB ---
+    async function loadMediaInto(el, mediaId, kind) { 
+      try { 
+        const blob = await idbGet(mediaId); 
+        if (blob) { 
+          const url = URL.createObjectURL(blob); 
+          el.src = url; 
+          if (kind === 'video' && el.tagName === 'VIDEO' && el.loop) el.play().catch(() => {}); 
+        } 
+      } catch (e) { console.warn('media load fail', e); } 
+    }
+
+    // --- Переключение чатов ---
+    function switchChat(id) { 
+      state.activeChatId = id; 
+      const chat = state.chats.find(c => c.id === id); 
+      if (chat) chat.unread = 0; 
+      
+      // Обновляем шапку чата
+      const nameEl = document.getElementById('activeChatName'); 
+      if(nameEl) nameEl.textContent = chat ? chat.name : id; 
+      const avatarEl = document.getElementById('activeChatAvatar'); 
+      if(avatarEl) avatarEl.textContent = chat?.type === 'channel' ? '#' : 'DM'; 
+      const typEl = document.getElementById('typingStatus'); 
+      if(typEl) typEl.textContent = ''; 
+      
+      renderChatList(document.getElementById('chatSearchInput')?.value || ''); 
+      renderMessages(true); // Принудительный скролл вниз при открытии чата
+      saveState(); 
+    }
+    /* ==========================================================================
+       7. КОНТЕКСТНОЕ МЕНЮ И РЕАКЦИИ
+       ========================================================================== */
+    const contextMenu = document.getElementById('contextMenu');
+    const quickReactPanel = document.getElementById('quickReactPanel');
+    const replyBar = document.getElementById('replyBar');
+
+    // Показать контекстное меню
+    function showContextMenu(e, msg) { 
+      if(!e) return; 
+      e.preventDefault?.(); 
+      e.stopPropagation?.(); 
+      state.selectedMessageForContext = msg; 
+      if (!contextMenu) return; 
+      
+      const x = e.clientX || (e.touches && e.touches[0].clientX) || 100; 
+      const y = e.clientY || (e.touches && e.touches[0].clientY) || 100; 
+      contextMenu.style.left = Math.min(x, window.innerWidth - 180) + 'px'; 
+      contextMenu.style.top = Math.min(y, window.innerHeight - 220) + 'px'; 
+      contextMenu.classList.remove('hidden'); 
+    }
+
+    // Скрыть меню при клике в любом другом месте
+    document.addEventListener('click', () => { 
+      contextMenu?.classList.add('hidden'); 
+      quickReactPanel?.classList.add('hidden'); 
+    });
+
+    // Обработка действий из контекстного меню
+    document.querySelectorAll('#contextMenu [data-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const msg = state.selectedMessageForContext;
+        if (!msg) return;
+        contextMenu?.classList.add('hidden');
+
+        if (action === 'reply') {
+          state.replyTo = msg;
+          const ru = document.getElementById('replyToUser'); if(ru) ru.textContent = msg.sender;
+          const rt = document.getElementById('replyToText'); if(rt) rt.textContent = msg.text || (msg.media ? '[media]' : '');
+          replyBar?.classList.add('active');
+          document.getElementById('messageInput')?.focus();
+        } else if (action === 'pin') {
+          state.pinned = { text: msg.text || '[media]', id: msg.id };
+          const pbc = document.getElementById('pinnedBannerContent'); if(pbc) pbc.textContent = state.pinned.text;
+          document.getElementById('pinnedBanner')?.classList.remove('hidden');
+          saveState(); toast('Закреплено', 'success');
+        } else if (action === 'copy') {
+          navigator.clipboard.writeText(msg.text || '').then(() => toast(t('copied'), 'success'));
+        } else if (action === 'delete') {
+          state.messages[state.activeChatId] = state.messages[state.activeChatId].filter(m => m.id !== msg.id);
+          renderMessages(); saveState();
+        } else if (action === 'react') {
+          if(quickReactPanel) {
+            quickReactPanel.style.left = contextMenu.style.left;
+            quickReactPanel.style.top = (parseInt(contextMenu.style.top) - 40) + 'px';
+            quickReactPanel.classList.remove('hidden');
+          }
+        } else if (action === 'forward') {
+          openForwardModal(msg);
+        }
+      });
+    });
+
+    // Отмена ответа
+    document.getElementById('cancelReplyBtn')?.addEventListener('click', () => { 
+      state.replyTo = null; 
+      replyBar?.classList.remove('active'); 
+    });
+
+    // Открепить сообщение
+    document.getElementById('unpinBtn')?.addEventListener('click', () => { 
+      state.pinned = null; 
+      document.getElementById('pinnedBanner')?.classList.add('hidden'); 
+      saveState(); 
+    });
+
+    // Быстрые реакции (из панельки)
+    document.querySelectorAll('#quickReactPanel [data-emoji]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const msg = state.selectedMessageForContext;
+        if (msg) toggleReaction(msg.id, btn.dataset.emoji);
+        quickReactPanel?.classList.add('hidden');
+      });
+    });
+
+    // Логика переключения реакции
+    function toggleReaction(msgId, emoji) { 
+      const msg = (state.messages[state.activeChatId] || []).find(m => m.id === msgId); 
+      if (!msg) return; 
+      if (!msg.reactions) msg.reactions = {}; 
+      if (!msg.reactions[emoji]) msg.reactions[emoji] = []; 
+      
+      const idx = msg.reactions[emoji].indexOf(state.currentUser); 
+      if (idx >= 0) msg.reactions[emoji].splice(idx, 1); // Убрать реакцию
+      else msg.reactions[emoji].push(state.currentUser); // Добавить реакцию
+      
+      if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji]; 
+      renderMessages(); saveState(); 
+    }
+
+    /* ==========================================================================
+       8. ОПРОСЫ (POLLS)
+       ========================================================================== */
+    document.getElementById('createPollBtn')?.addEventListener('click', () => document.getElementById('pollModal')?.classList.remove('hidden'));
+    document.getElementById('cancelPollBtn')?.addEventListener('click', () => document.getElementById('pollModal')?.classList.add('hidden'));
+    
+    document.getElementById('submitPollBtn')?.addEventListener('click', () => {
+      const q = document.getElementById('pollQuestion')?.value.trim();
+      const o1 = document.getElementById('pollOpt1')?.value.trim();
+      const o2 = document.getElementById('pollOpt2')?.value.trim();
+      if (!q || !o1 || !o2) { toast('Заполните все поля', 'error'); return; }
+      
+      const msg = { id: uid(), sender: state.currentUser, text: '', timestamp: Date.now(), isSelf: true, reactions: {}, poll: { question: q, opt1: o1, opt2: o2, v1: 0, v2: 0, voters: {} } };
+      if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = [];
+      state.messages[state.activeChatId].push(msg);
+      
+      renderMessages(true); saveState();
+      document.getElementById('pollModal')?.classList.add('hidden');
+      document.getElementById('pollQuestion').value = ''; 
+      document.getElementById('pollOpt1').value = ''; 
+      document.getElementById('pollOpt2').value = '';
+    });
+
+    function votePoll(msgId, opt) { 
+      const msg = (state.messages[state.activeChatId] || []).find(m => m.id === msgId); 
+      if (!msg || !msg.poll) return; 
+      if (!msg.poll.voters) msg.poll.voters = {}; 
+      if (msg.poll.voters[state.currentUser]) { toast('Вы уже голосовали', 'error'); return; } 
+      
+      msg.poll.voters[state.currentUser] = opt; 
+      if (opt === 1) msg.poll.v1 = (msg.poll.v1 || 0) + 1; 
+      else msg.poll.v2 = (msg.poll.v2 || 0) + 1; 
+      
+      renderMessages(); saveState(); 
+    }
+
+    /* ==========================================================================
+       9. ПОИСК ПО ЧАТУ
+       ========================================================================== */
+    const chatSearchBox = document.getElementById('chatSearchBox');
+    
+    document.getElementById('toggleChatSearchBtn')?.addEventListener('click', () => {
+      chatSearchBox?.classList.toggle('hidden');
+      if (!chatSearchBox?.classList.contains('hidden')) document.getElementById('inChatSearchInput')?.focus();
+      else clearSearchHighlight();
+    });
+    
+    document.getElementById('closeSearchBtn')?.addEventListener('click', () => { 
+      chatSearchBox?.classList.add('hidden'); 
+      clearSearchHighlight(); 
+    });
+    
+    function clearSearchHighlight() {
+      document.querySelectorAll('.search-highlight').forEach(el => { 
+        const parent = el.parentNode; 
+        parent.replaceChild(document.createTextNode(el.textContent), el); 
+        parent.normalize(); 
+      });
+      state.searchMatches = []; 
+      state.searchIndex = -1;
+      const src = document.getElementById('searchResultCount'); 
+      if(src) src.textContent = '0';
+    }
+
+    function performSearch(query) {
+      clearSearchHighlight();
+      if (!query || query.length < 1) return;
+      
+      const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const textNodes = [];
+      const walker = document.createTreeWalker(messageFeedEl, NodeFilter.SHOW_TEXT, null, false);
+      let node;
+      
+      while (node = walker.nextNode()) { 
+        if (node.parentElement.closest('.msg-text') || node.parentElement.classList.contains('msg-text')) textNodes.push(node); 
+      }
+      
+      const matches = [];
+      textNodes.forEach(textNode => {
+        const text = textNode.textContent; 
+        let match; 
+        const frag = document.createDocumentFragment(); 
+        let lastIndex = 0; 
+        re.lastIndex = 0;
+        
+        while ((match = re.exec(text)) !== null) {
+          if (match.index > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+          const span = document.createElement('span'); 
+          span.className = 'search-highlight'; 
+          span.textContent = match[0]; 
+          frag.appendChild(span); 
+          matches.push(span); 
+          lastIndex = re.lastIndex;
+        }
+        
+        if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+        if (matches.length && lastIndex > 0) textNode.parentNode.replaceChild(frag, textNode);
+      });
+      
+      state.searchMatches = matches; 
+      state.searchIndex = matches.length ? 0 : -1;
+      const src = document.getElementById('searchResultCount'); 
+      if(src) src.textContent = matches.length;
+      
+      if (matches.length) { 
+        matches[0].classList.add('current'); 
+        matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+      }
+    }
+
+    document.getElementById('inChatSearchInput')?.addEventListener('input', (e) => performSearch(e.target.value.trim()));
+    document.getElementById('inChatSearchInput')?.addEventListener('keydown', (e) => { 
+      if (e.key === 'Enter') { e.preventDefault(); goSearch(e.shiftKey ? -1 : 1); } 
+    });
+    document.getElementById('searchNextBtn')?.addEventListener('click', () => goSearch(1));
+    document.getElementById('searchPrevBtn')?.addEventListener('click', () => goSearch(-1));
+
+    function goSearch(dir) {
+      if (!state.searchMatches.length) return;
+      state.searchMatches[state.searchIndex]?.classList.remove('current');
+      state.searchIndex = (state.searchIndex + dir + state.searchMatches.length) % state.searchMatches.length;
+      const cur = state.searchMatches[state.searchIndex];
+      cur.classList.add('current'); 
+      cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      const src = document.getElementById('searchResultCount'); 
+      if(src) src.textContent = `${state.searchIndex + 1}/${state.searchMatches.length}`;
+    }
+
+    /* ==========================================================================
+       10. ПЕРЕСЫЛКА СООБЩЕНИЙ (FORWARD)
+       ========================================================================== */
+    function openForwardModal(msg) {
+      const list = document.getElementById('forwardChatList'); 
+      if(!list) return;
+      
+      list.innerHTML = state.chats.map(c => `<button data-chat="${c.id}" class="w-full text-left px-3 py-2 rounded hover:bg-cyan-500/20 text-xs">${escapeHtml(c.name)}</button>`).join('');
+      
+      list.querySelectorAll('[data-chat]').forEach(btn => {
+        btn.onclick = () => {
+          const targetId = btn.dataset.chat;
+          if (!state.messages[targetId]) state.messages[targetId] = [];
+          
+          // Клонируем сообщение для пересылки
+          state.messages[targetId].push({ ...msg, id: uid(), isSelf: true, sender: state.currentUser, timestamp: Date.now(), text: msg.text ? `[Forwarded] ${msg.text}` : msg.text });
+          
+          document.getElementById('forwardModal')?.classList.add('hidden');
+          toast(t('forwarded'), 'success'); 
+          saveState();
+        };
+      });
+      document.getElementById('forwardModal')?.classList.remove('hidden');
+    }
+    
+    document.getElementById('cancelForwardBtn')?.addEventListener('click', () => document.getElementById('forwardModal')?.classList.add('hidden'));
+const chatForm = document.getElementById('chatForm');
+const messageInput = document.getElementById('messageInput');
+if (chatForm) {
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = messageInput.value.trim();
+        const hasMedia = !!state.pendingAttachment;
+                if (!text && !hasMedia) {
+          SoundEngine.playError();
+          return;
+        }
+               const newMsg = { 
+          id: uid(), 
+          sender: state.currentUser, 
+          text: text || '', 
+          timestamp: Date.now(), 
+          isSelf: true, 
+          reactions: {},
+          secret: state.secretMode, // <--- Добавили флаг
+          expiresAt: state.secretMode ? Date.now() + 10000 : null // <--- Добавили таймер на 10 сек
+        };
+        if (state.replyTo) { newMsg.replyTo = { id: state.replyTo.id, sender: state.replyTo.sender, text: state.replyTo.text }; cancelReply(); }
+        if (state.pendingAttachment) { newMsg.media = { ...state.pendingAttachment }; state.pendingAttachment = null; document.getElementById('attachmentPreview')?.classList.add('hidden'); }
+        if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = [];
+        state.messages[state.activeChatId].push(newMsg);
+        messageInput.value = '';
+        renderMessages(true);
+        saveState();
+        broadcastTyping(false); // Will be in a later part, but good to keep structure
+        SoundEngine.playTransmit();
+    });
+}
+    /* ==========================================================================
+       11. ОТПРАВКА СООБЩЕНИЙ И ВЛОЖЕНИЙ
+       ========================================================================== */
+    //const chatForm = document.getElementById('chatForm'); 
+    //const messageInput = document.getElementById('messageInput');
+
+    // Вспомогательная функция для отмены ответа
+    function cancelReply() {
+      state.replyTo = null;
+      document.getElementById('replyBar')?.classList.remove('active');
+    }
+
+    if (chatForm) {
+      chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); 
+        const text = messageInput.value.trim(); 
+        const hasMedia = !!state.pendingAttachment; 
+        if (!text && !hasMedia) return;
+
+        // Создаем объект нового сообщения
+              const newMsg = {
+            id: uid(),
+            sender: state.currentUser,
+            text: text || '',
+            timestamp: Date.now(),
+            isSelf: true,
+            reactions: {},
+            secret: state.secretMode, 
+            expiresAt: state.secretMode ? Date.now() + 10000 : null 
+        };
+        
+        // Добавляем ответ, если он был
+        if (state.replyTo) { 
+          newMsg.replyTo = { id: state.replyTo.id, sender: state.replyTo.sender, text: state.replyTo.text }; 
+          cancelReply(); 
+        }
+        
+        // Добавляем вложение, если оно есть
+        if (state.pendingAttachment) { 
+          newMsg.media = { ...state.pendingAttachment }; 
+          state.pendingAttachment = null; 
+          document.getElementById('attachmentPreview')?.classList.add('hidden'); 
+        }
+        
+        // Сохраняем и обновляем UI
+        if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = []; 
+        state.messages[state.activeChatId].push(newMsg);
+        
+        messageInput.value = ''; 
+        renderMessages(true); // true = принудительный скролл вниз
+        saveState(); 
+        broadcastTyping(false); // Отключаем статус "печатает..."
+SoundEngine.playTransmit();
+        // Сброс режима бомбы после отправки
+        if (state.secretMode) {
+          state.secretMode = false;
+          const secretBtn = document.getElementById('secretMsgBtn');
+          if (secretBtn) {
+            secretBtn.classList.remove('text-red-500', 'animate-pulse');
+            secretBtn.classList.add('text-slate-400');
+          }
+        }
+      });
+    }
+
+    // Прикрепление файлов
+    document.getElementById('fileInput')?.addEventListener('change', async (e) => {
+      const file = e.target.files[0]; 
+      if (!file) return; 
+      if (file.size > 10 * 1024 * 1024) { toast('Файл больше 10 МБ', 'error'); e.target.value = ''; return; }
+      
+      const mediaId = uid(); 
+      await idbPut(mediaId, file); 
+      
+      let type = 'file'; 
+      if (file.type.startsWith('image/')) type = 'image'; 
+      else if (file.type.startsWith('video/')) type = 'video'; 
+      else if (file.type.startsWith('audio/')) type = 'audio';
+      
+      state.pendingAttachment = { id: mediaId, type, name: file.name, size: file.size }; 
+      
+      const nameEl = document.getElementById('attachmentName'); 
+      if(nameEl) nameEl.textContent = file.name; 
+      document.getElementById('attachmentPreview')?.classList.remove('hidden'); 
+      e.target.value = '';
+    });
+    
+    // Очистка прикрепленного файла
+    document.getElementById('clearAttachmentBtn')?.addEventListener('click', async () => { 
+      if (state.pendingAttachment) await idbDelete(state.pendingAttachment.id); 
+      state.pendingAttachment = null; 
+      document.getElementById('attachmentPreview')?.classList.add('hidden'); 
+    });
+
+    /* ==========================================================================
+       12. ГОЛОСОВЫЕ СООБЩЕНИЯ
+       ========================================================================== */
+    let mediaRecorder = null, recordedChunks = [], recordingStart = 0, recordingTimerInterval = null, recordingMode = null;
+    
+    async function startVoiceRecording() {
+      if (mediaRecorder && mediaRecorder.state === 'recording') { stopRecording(); return; }
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); 
+        recordedChunks = []; 
+        mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+        
+        mediaRecorder.ondataavailable = e => { if (e.data.size) recordedChunks.push(e.data); };
+        
+        mediaRecorder.onstop = async () => { 
+          stream.getTracks().forEach(t => t.stop()); 
+          const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType }); 
+          if (blob.size < 1000) { toast('Слишком короткая запись', 'error'); return; } 
+          
+          const mediaId = uid(); 
+          await idbPut(mediaId, blob); 
+          
+          const msg = { 
+            id: uid(), 
+            sender: state.currentUser, 
+            text: '', 
+            timestamp: Date.now(), 
+            isSelf: true, 
+            reactions: {}, 
+            media: { id: mediaId, type: 'audio', name: 'voice.webm' } 
+          }; 
+          
+          if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = []; 
+          state.messages[state.activeChatId].push(msg); 
+          renderMessages(true); saveState(); 
+        };
+        
+        mediaRecorder.start(200); 
+        recordingMode = 'voice'; 
+        recordingStart = Date.now(); 
+        
+        // UI для записи
+        document.getElementById('recordingIndicator')?.classList.add('active'); 
+        const label = document.getElementById('recordingTypeLabel'); 
+        if(label) label.textContent = t('voice') || 'Recording...';
+        
+        recordingTimerInterval = setInterval(() => { 
+          const sec = Math.floor((Date.now() - recordingStart) / 1000); 
+          const el = document.getElementById('recordingTimer'); 
+          if(el) el.textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`; 
+        }, 200); 
+      } catch (err) { 
+        toast('Нет доступа к микрофону.', 'error'); 
+      }
+    }
+    
+    function stopRecording() { 
+      if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); 
+      document.getElementById('recordingIndicator')?.classList.remove('active'); 
+      clearInterval(recordingTimerInterval); 
+      recordingMode = null; 
+    }
+    
+    document.getElementById('voiceRecordBtn')?.addEventListener('click', startVoiceRecording);
+    document.getElementById('stopRecordingBtn')?.addEventListener('click', stopRecording);
+
+    /* ==========================================================================
+       13. ВИДЕО-КРУЖКИ (ИСПРАВЛЕН БАГ С ДВОЙНЫМ КЛИКОМ)
+       ========================================================================== */
+    const videoNoteModal = document.getElementById('videoNoteModal'); 
+    const videoNotePreview = document.getElementById('videoNotePreview'); 
+    let videoNoteStream = null, videoNoteRecorder = null, videoNoteChunks = [], isRecordingVideoNote = false;
+    
+    // Открытие модалки с камерой
+    document.getElementById('videoNoteBtn')?.addEventListener('click', async () => { 
+      try { 
+        videoNoteStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true }); 
+        if(videoNotePreview) videoNotePreview.srcObject = videoNoteStream; 
+        videoNoteModal?.classList.remove('hidden'); 
+      } catch (err) { 
+        toast('Нет доступа к камере', 'error'); 
+      } 
+    });
+    
+    // Логика старта и остановки записи (один обработчик вместо двух!)
+    document.getElementById('startVidRecordBtn')?.addEventListener('click', () => {
+      if (!videoNoteStream) return;
+      
+      // Если уже пишем — останавливаем
+      if (isRecordingVideoNote) { 
+        if (videoNoteRecorder && videoNoteRecorder.state === 'recording') videoNoteRecorder.stop(); 
+        return; 
+      }
+      
+      // Иначе начинаем писать
+      videoNoteChunks = []; 
+      const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'; 
+      videoNoteRecorder = new MediaRecorder(videoNoteStream, { mimeType: mime });
+      
+      videoNoteRecorder.ondataavailable = e => { if (e.data.size) videoNoteChunks.push(e.data); };
+      
+      videoNoteRecorder.onstop = async () => { 
+        const blob = new Blob(videoNoteChunks, { type: 'video/webm' }); 
+        const mediaId = uid(); 
+        await idbPut(mediaId, blob); 
+        
+        if (!state.messages[state.activeChatId]) state.messages[state.activeChatId] = []; 
+        state.messages[state.activeChatId].push({ 
+          id: uid(), 
+          sender: state.currentUser, 
+          text: '', 
+          timestamp: Date.now(), 
+          isSelf: true, 
+          reactions: {}, 
+          media: { id: mediaId, type: 'video-note' } 
+        }); 
+        
+        renderMessages(true); saveState(); 
+        closeVideoNoteModal(); 
+      };
+      
+      videoNoteRecorder.start(200); 
+      isRecordingVideoNote = true; 
+      
+      const btn = document.getElementById('startVidRecordBtn'); 
+      if(btn) { btn.textContent = 'STOP'; btn.classList.replace('bg-pink-600', 'bg-red-600'); }
+      
+      // Автостоп через 60 секунд
+      setTimeout(() => { 
+        if (videoNoteRecorder?.state === 'recording') { 
+          videoNoteRecorder.stop(); 
+        } 
+      }, 60000);
+    });
+    
+    // Сброс UI кнопки, когда запись остановлена
+    videoNoteRecorder?.addEventListener('stop', () => { 
+      isRecordingVideoNote = false; 
+      const btn = document.getElementById('startVidRecordBtn'); 
+      if(btn) { btn.textContent = 'RECORD'; btn.classList.replace('bg-red-600', 'bg-pink-600'); }
+    });
+    
+    // Закрытие модалки и очистка потоков
+    function closeVideoNoteModal() { 
+      if (videoNoteStream) { videoNoteStream.getTracks().forEach(t => t.stop()); videoNoteStream = null; } 
+      if(videoNotePreview) videoNotePreview.srcObject = null; 
+      videoNoteModal?.classList.add('hidden'); 
+      const btn = document.getElementById('startVidRecordBtn'); 
+      if(btn) { btn.textContent = 'RECORD'; btn.classList.replace('bg-red-600', 'bg-pink-600'); }
+      isRecordingVideoNote = false; 
+    }
+    
+    document.getElementById('stopVidRecordBtn')?.addEventListener('click', closeVideoNoteModal);
+    /* ==========================================================================
+       14. STORIES (ИСТОРИИ)
+       ========================================================================== */
+    let currentStoryIndex = 0, storyTimer = null;
+
+    // Отрисовка аватарок историй в сайдбаре
+    function renderStories() {
+      const container = document.getElementById('storiesContainer'); 
+      if (!container) return; 
+      container.innerHTML = '';
+      
+      state.stories.forEach((s, idx) => {
+        const viewed = state.viewedStories.includes(s.id); 
+        const el = document.createElement('div'); 
+        el.className = 'flex flex-col items-center cursor-pointer shrink-0';
+        
+        el.innerHTML = `
+          <div class="w-12 h-12 md:w-10 md:h-10 rounded-full p-0.5 ${viewed ? 'bg-slate-600' : 'bg-gradient-to-tr from-cyan-400 to-pink-500'}">
+            <img src="${escapeHtml(s.avatar)}" class="w-full h-full rounded-full object-cover border-2 border-black" onerror="this.src='https://via.placeholder.com/40'">
+          </div>
+          <span class="text-[10px] text-slate-300 mt-1 truncate w-12 text-center">${escapeHtml(s.author.split(' ')[0])}</span>
+        `;
+        
+        el.onclick = () => { 
+          currentStoryIndex = idx; 
+          document.getElementById('storyViewerModal')?.classList.remove('hidden'); 
+          showCurrentStory(); 
+        };
+        container.appendChild(el);
+      });
+    }
+
+    // Показ текущей истории (фото или видео)
+    function showCurrentStory() {
+      clearTimeout(storyTimer); 
+      const s = state.stories[currentStoryIndex]; 
+      if (!s) { 
+        document.getElementById('storyViewerModal')?.classList.add('hidden'); 
+        return; 
+      }
+      
+      // Помечаем как просмотренную
+      if (!state.viewedStories.includes(s.id)) { 
+        state.viewedStories.push(s.id); 
+        saveState(); 
+        renderStories(); 
+      }
+      
+      const authorEl = document.getElementById('storyAuthor'); 
+      if(authorEl) authorEl.textContent = s.author;
+      
+      const img = document.getElementById('storyImage'); 
+      const vid = document.getElementById('storyVideo'); 
+      if(img) img.classList.add('hidden'); 
+      if(vid) vid.classList.add('hidden');
+      
+      if (s.type === 'video') { 
+        if(vid) { 
+          vid.src = s.mediaUrl; 
+          vid.classList.remove('hidden'); 
+          vid.play().catch(() => {}); 
+        } 
+      } else { 
+        if(img) { 
+          img.src = s.mediaUrl; 
+          img.classList.remove('hidden'); 
+        } 
+      }
+      
+      // Отрисовка прогресс-баров сверху
+      const bars = document.getElementById('storyProgressBars'); 
+      if(bars) { 
+        bars.innerHTML = state.stories.map((_, i) => `
+          <div class="h-0.5 flex-1 rounded bg-slate-600 overflow-hidden">
+            <div class="h-full bg-cyan-400 transition-all duration-[5000ms] linear" style="width:${i < currentStoryIndex ? '100%' : i === currentStoryIndex ? '0%' : '0%'}" id="prog${i}"></div>
+          </div>`).join(''); 
+        
+        setTimeout(() => { 
+          const p = document.getElementById('prog' + currentStoryIndex); 
+          if (p) p.style.width = '100%'; 
+        }, 50); 
+      }
+      
+      // Автоматический переход через 5 секунд
+      storyTimer = setTimeout(() => { 
+        currentStoryIndex++; 
+        if (currentStoryIndex >= state.stories.length) {
+          document.getElementById('storyViewerModal')?.classList.add('hidden'); 
+        } else {
+          showCurrentStory(); 
+        }
+      }, 5000);
+    }
+
+    // Управление просмотром историй
+    document.getElementById('closeStoryBtn')?.addEventListener('click', () => { 
+      clearTimeout(storyTimer); 
+      document.getElementById('storyViewerModal')?.classList.add('hidden'); 
+      document.getElementById('storyVideo')?.pause(); 
+    });
+    
+    document.getElementById('storyNextZone')?.addEventListener('click', () => { 
+      clearTimeout(storyTimer); 
+      currentStoryIndex++; 
+      if (currentStoryIndex >= state.stories.length) {
+        document.getElementById('storyViewerModal')?.classList.add('hidden'); 
+      } else {
+        showCurrentStory(); 
+      }
+    });
+    
+    document.getElementById('storyPrevZone')?.addEventListener('click', () => { 
+      clearTimeout(storyTimer); 
+      currentStoryIndex = Math.max(0, currentStoryIndex - 1); 
+      showCurrentStory(); 
+    });
+    
+    // Добавление своей истории
+    document.getElementById('addStoryBtn')?.addEventListener('click', () => { 
+      const input = document.createElement('input'); 
+      input.type = 'file'; 
+      input.accept = 'image/*,video/*'; 
+      
+      input.onchange = async () => { 
+        const file = input.files[0]; 
+        if (!file) return; 
+        if (file.size > 5 * 1024 * 1024) { toast('Максимум 5 МБ', 'error'); return; } 
+        
+        const mediaId = uid(); 
+        await idbPut(mediaId, file); 
+        
+        state.stories.unshift({ 
+          id: mediaId, 
+          author: state.currentUser, 
+          avatar: 'https://via.placeholder.com/40/00f0ff/000?text=OP', 
+          mediaUrl: URL.createObjectURL(file), 
+          type: file.type.startsWith('video') ? 'video' : 'image' 
+        }); 
+        
+        saveState(); 
+        renderStories(); 
+        toast('Сторис добавлен', 'success'); 
+      }; 
+      
+      input.click(); 
+    });
+
+    /* ==========================================================================
+       15. ИНДИКАТОР "ПЕЧАТАЕТ..." (TYPING)
+       ========================================================================== */
+    const typingChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cyberpulse_typing') : null;
+    let typingTimeout = null;
+    
+    // Отправка статуса "печатает" (в другие вкладки и в Firebase)
+    function broadcastTyping(isTyping) { 
+      if (typingChannel) typingChannel.postMessage({ chatId: state.activeChatId, user: state.currentUser, typing: isTyping }); 
+      
+      if (firebaseDb) { 
+        const ref = firebaseDb.ref(`typing/${state.activeChatId}/${state.currentUser}`); 
+        if (isTyping) { 
+          ref.set({ at: Date.now() }); 
+          ref.onDisconnect().remove(); 
+        } else {
+          ref.remove(); 
+        }
+      } 
+    }
+    
+    // При вводе текста — отправляем "печатает..."
+    messageInput?.addEventListener('input', () => { 
+      broadcastTyping(true); 
+      clearTimeout(typingTimeout); 
+      typingTimeout = setTimeout(() => broadcastTyping(false), 2000); 
+    });
+    
+    // Слушаем другие вкладки
+    if (typingChannel) { 
+      typingChannel.onmessage = (e) => { 
+        const { chatId, user, typing } = e.data; 
+        if (chatId === state.activeChatId && user !== state.currentUser) { 
+          const el = document.getElementById('typingStatus'); 
+          if(el) el.textContent = typing ? `${user} ${t('typing')}` : ''; 
+        } 
+      }; 
+    }
+
+    // Слушаем Firebase (для пользователей в других сетях)
+    if (firebaseDb) {
+      setInterval(() => {
+        if (!state.activeChatId) return;
+        firebaseDb.ref(`typing/${state.activeChatId}`).once('value').then(snap => {
+          const val = snap.val() || {};
+          // Фильтруем: не я, и "печатал" не дольше 3 секунд назад
+          const others = Object.keys(val).filter(u => u !== state.currentUser && Date.now() - (val[u].at || 0) < 3000);
+          const el = document.getElementById('typingStatus');
+          if (el) {
+            el.textContent = others.length 
+              ? (others.length === 1 ? `${others[0]} ${t('typing')}` : `${others.slice(0, 3).join(', ')} ${t('typing')}`) 
+              : '';
+          }
+        }).catch(() => {});
+      }, 1500);
+    }
+    /* ==========================================================================
+       16. НАСТРОЙКИ (SETTINGS)
+       ========================================================================== */
+    
+    // Открытие настроек
+    document.getElementById('openSettingsBtn')?.addEventListener('click', () => { 
+      const s = loadSettings(); 
+      const nameIn = document.getElementById('settingsDisplayName'); 
+      if(nameIn) nameIn.value = state.currentUser; 
+      
+      const keyIn = document.getElementById('settingsGeminiKey'); 
+      if(keyIn) keyIn.value = s.geminiKey || ''; 
+      
+      const mr = document.getElementById('settingsMatrixRain'); 
+      if(mr) mr.checked = s.matrixRain !== false; 
+      
+      const rm = document.getElementById('settingsReducedMotion'); 
+      if(rm) rm.checked = !!s.reducedMotion; 
+      
+      const snd = document.getElementById('settingsSounds'); 
+      if(snd) snd.checked = s.sounds !== false; 
+      
+      const lang = document.getElementById('settingsLanguage'); 
+      if(lang) lang.value = s.language || 'ru'; 
+      
+      document.getElementById('settingsModal')?.classList.remove('hidden'); 
+    });
+
+    // Сохранение и закрытие настроек
+    function closeSettings() {
+      const modal = document.getElementById('settingsModal'); 
+      if (modal) modal.classList.add('hidden');
+      
+      try {
+        const s = loadSettings(); 
+        const newName = document.getElementById('settingsDisplayName')?.value.trim();
+        
+        if (newName) { 
+          state.currentUser = newName; 
+          const uc = document.getElementById('userCallsign'); if(uc) uc.textContent = newName; 
+          const ua = document.getElementById('userAvatar'); if(ua) ua.textContent = newName.slice(0, 2).toUpperCase(); 
+        }
+        
+        // Сохраняем все настройки в localStorage
+        s.displayName = state.currentUser; 
+        s.geminiKey = document.getElementById('settingsGeminiKey')?.value.trim() || ''; 
+        s.matrixRain = document.getElementById('settingsMatrixRain')?.checked ?? true; 
+        s.reducedMotion = document.getElementById('settingsReducedMotion')?.checked ?? false; 
+        s.sounds = document.getElementById('settingsSounds')?.checked ?? true; 
+        s.language = document.getElementById('settingsLanguage')?.value || 'ru';
+        
+        // Применяем настройки
+        if(window.matrixActive !== undefined) window.matrixActive = s.matrixRain; 
+        document.body.classList.toggle('reduced-motion', s.reducedMotion); 
+        applyLanguage(s.language); 
+        saveSettings(s); 
+        saveState(); 
+        toast(t('saved'), 'success');
+      } catch (err) { 
+        console.error(err); 
+      }
+    }
+
+    document.getElementById('closeSettingsBtn')?.addEventListener('click', (e) => { e.preventDefault(); closeSettings(); });
+    document.getElementById('settingsModal')?.addEventListener('click', (e) => { if (e.target.id === 'settingsModal') closeSettings(); });
+    
+    // Смена языка
+    document.getElementById('settingsLanguage')?.addEventListener('change', (e) => { 
+      const lang = e.target.value || 'ru'; 
+      applyLanguage(lang); 
+      const s = loadSettings(); 
+      s.language = lang; 
+      saveSettings(s); 
+    });
+
+    // Смена темы (ФИКС БАГА С ПЕРЕЗАПИСЬЮ КЛАССОВ)
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.theme;
+        // Убираем старые темы
+        document.body.classList.remove('theme-cyan', 'theme-emerald', 'theme-pink', 'theme-amber');
+        // Добавляем новую
+        document.body.classList.add('theme-' + theme);
+        // Сохраняем в настройки
+        const s = loadSettings(); 
+        s.theme = theme; 
+        saveSettings(s);
+      });
+    });
+
+    /* ==========================================================================
+       17. КРИПТОГРАФИЯ И ДАННЫЕ
+       ========================================================================== */
+    document.getElementById('regenKeysBtn')?.addEventListener('click', async () => { 
+      await CryptoEngine.generateKeyPair(); 
+      toast('Ключи сгенерированы', 'success'); 
+    });
+
+    document.getElementById('copyPublicKeyBtn')?.addEventListener('click', async () => { 
+      const key = await CryptoEngine.exportPublicKey(); 
+      await navigator.clipboard.writeText(key); 
+      toast('Public key скопирован', 'success'); 
+    });
+
+    document.getElementById('exportChatsBtn')?.addEventListener('click', () => { 
+      const data = JSON.stringify({ chats: state.chats, messages: state.messages }, null, 2); 
+      const blob = new Blob([data], { type: 'application/json' }); 
+      const a = document.createElement('a'); 
+      a.href = URL.createObjectURL(blob); 
+      a.download = `cyberpulse-export-${Date.now()}.json`; 
+      a.click(); 
+    });
+
+    document.getElementById('clearAllDataBtn')?.addEventListener('click', () => { 
+      if (!confirm('Удалить все данные?')) return; 
+      localStorage.removeItem(LS_KEY); 
+      localStorage.removeItem(LS_SETTINGS); 
+      indexedDB.deleteDatabase(IDB_NAME); 
+      location.reload(); 
+    });
+
+    /* ==========================================================================
+       18. GEMINI AI
+       ========================================================================== */
+    const aiDrawer = document.getElementById('aiDrawer');
+    
+    document.getElementById('openAiDrawerBtn')?.addEventListener('click', () => aiDrawer?.classList.toggle('hidden'));
+    document.getElementById('closeAiDrawerBtn')?.addEventListener('click', () => aiDrawer?.classList.add('hidden'));
+
+    // Запрос к Google API
+    // Функция роботизированной озвучки
+    function speakRobot(text) {
+      if (!window.speechSynthesis) return; // Если браузер не поддерживает
+      if (!SoundEngine.isEnabled()) return; // Если звуки выключены в настройках
+
+      // Убираем Markdown-символы (звездочки, решетки), чтобы робот их не читал
+      const cleanText = text.replace(/[*_`#]/g, '');
+
+      // Останавливаем предыдущую озвучку, если она еще говорит
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      
+      // Делаем голос роботизированным
+      utterance.pitch = 0.6; // Понижаем тон (от 0 до 2)
+      utterance.rate = 1.1;  // Немного ускоряем темп (от 0.1 до 10)
+
+      // Ищем подходящий голос (сначала русский, потом английский)
+      const voices = window.speechSynthesis.getVoices();
+      let selectedVoice = voices.find(v => v.lang.includes('ru')) || voices.find(v => v.lang.includes('en'));
+      if (selectedVoice) utterance.voice = selectedVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+    async function callGemini(prompt, system = 'Ты — AI-компаньон в киберпанк-мессенджере CYBER_PULSE. Отвечай кратко, технично, с лёгким юмором. На русском.') {
+      const key = loadSettings().geminiKey; 
+      if (!key) { 
+        toast('Введите Gemini API key в настройках', 'error'); 
+        return null; 
+      }
+      
+      const controller = new AbortController(); 
+      const timeout = setTimeout(() => controller.abort(), 30000); // Таймаут 30 сек
+      
+      try { 
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          signal: controller.signal,
+          body: JSON.stringify({ 
+            contents: [{ role: 'user', parts: [{ text: prompt }] }], 
+            systemInstruction: { parts: [{ text: system }] }, 
+            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 } 
+          }) 
+        }); 
+        
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error('API Error'); 
+        
+        const data = await res.json(); 
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Пусто'; 
+      } catch (e) { 
+        clearTimeout(timeout);
+        if (e.name === 'AbortError') toast('Таймаут запроса к Gemini', 'error');
+        else toast('Ошибка Gemini. Проверьте ключ.', 'error'); 
+        return null; 
+      } 
+    }
+
+    // Обычный чат с ИИ
+    document.getElementById('aiForm')?.addEventListener('submit', async (e) => { 
+      e.preventDefault(); 
+      const input = document.getElementById('aiInput'); 
+      const val = input.value.trim(); 
+      if (!val) return; 
+      
+      const aiFeed = document.getElementById('aiFeed'); 
+      if(aiFeed) aiFeed.innerHTML += `<div class="p-2 rounded bg-cyan-950/40 text-cyan-200"><strong>Operator:</strong> ${escapeHtml(val)}</div>`; 
+      input.value = ''; 
+      if(aiFeed) aiFeed.scrollTop = aiFeed.scrollHeight; 
+      
+      const answer = await callGemini(val); 
+      if (answer && aiFeed) { 
+        aiFeed.innerHTML += `<div class="p-2 rounded bg-slate-900 text-slate-300 border border-slate-800"><strong class="text-cyan-400">GEMINI_AI:</strong> ${escapeHtml(answer).replace(/\n/g, '<br>')}</div>`; 
+        aiFeed.scrollTop = aiFeed.scrollHeight;
+ SoundEngine.playReceive();
+SoundEngine.speak(answer); 
+      } 
+    });
+
+    // Кнопка "Сводка чата"
+    document.getElementById('summarizeChatBtn')?.addEventListener('click', async () => {
+      const msgs = (state.messages[state.activeChatId] || []).slice(-50); // Берем последние 50
+      const text = msgs.map(m => `${m.sender}: ${m.text || '[media]'}`).join('\n');
+      const prompt = `Сделай краткое структурированное резюме этого чата (bullet points):\n\n${text}`;
+      const aiFeed = document.getElementById('aiFeed');
+      
+      if(aiFeed) aiFeed.innerHTML += `<div class="p-2 rounded bg-slate-900 border border-cyan-500/40 text-slate-200"><strong class="text-cyan-400">SUMMARIZING...</strong></div>`;
+      
+      const answer = await callGemini(prompt, 'Ты аналитик чатов. Выдай краткое резюме в виде списка.');
+      if (answer && aiFeed) {
+        aiFeed.innerHTML += `<div class="p-2 rounded bg-slate-900 border border-cyan-500/40 text-slate-200"><strong class="text-cyan-400">SUMMARY:</strong><br>${escapeHtml(answer).replace(/\n/g, '<br>')}</div>`;
+        aiFeed.scrollTop = aiFeed.scrollHeight;
+      }
+    });
+    /* ==========================================================================
+       19. WEBRTC ЗВОНКИ (АУДИО И ВИДЕО)
+       ========================================================================== */
+    let localStream = null, peerConnection = null, currentRoomId = null, isCaller = false;
+    const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+
+    // Создание соединения
+    function createPeerConnection() {
+      const pc = new RTCPeerConnection(iceServers);
+      
+      // Отправляем ICE-кандидаты в Firebase
+      pc.onicecandidate = (e) => {
+        if (e.candidate && currentRoomId && firebaseDb) {
+          firebaseDb.ref(`calls/${currentRoomId}/candidates/${isCaller ? 'caller' : 'callee'}`).push(e.candidate.toJSON());
+        }
+      };
+      
+      // Получаем видеопоток собеседника
+      pc.ontrack = (e) => {
+        const rv = document.getElementById('remoteVideo');
+        if (rv) rv.srcObject = e.streams[0];
+        const cs = document.getElementById('callStatus');
+        if (cs) cs.textContent = 'ENCRYPTED LINK ACTIVE // P2P CONNECTED';
+      };
+      
+      return pc;
+    }
+
+    // Начало звонка (создание комнаты)
+    async function startCall(video = true) {
+        SoundEngine.playCallStart();
+      if (!firebaseDb) { toast('Firebase не инициализирован', 'error'); return; }
+      
+      try {
+ SoundEngine.playCallStart();
+        // Получаем доступ к камере/микрофону
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
+        const lv = document.getElementById('localVideo');
+        if (lv) lv.srcObject = localStream;
+        document.getElementById('callOverlay')?.classList.remove('hidden');
+
+        // Создаем комнату
+        currentRoomId = uid().slice(0, 10);
+        isCaller = true;
+        const roomIdEl = document.getElementById('callRoomId'); 
+        if(roomIdEl) roomIdEl.textContent = `Room: ${currentRoomId}`;
+
+        peerConnection = createPeerConnection();
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        // Создаем Offer и отправляем в Firebase
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        await firebaseDb.ref(`calls/${currentRoomId}`).set({ 
+          offer: { type: offer.type, sdp: offer.sdp }, 
+          createdAt: Date.now(), 
+          caller: state.currentUser 
+        });
+
+        // Слушаем ответ от второго участника
+        firebaseDb.ref(`calls/${currentRoomId}/answer`).on('value', async (snap) => {
+          const data = snap.val();
+          if (data && !peerConnection.currentRemoteDescription) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+          }
+        });
+
+        // Слушаем ICE-кандидаты от второго участника
+        firebaseDb.ref(`calls/${currentRoomId}/candidates/callee`).on('child_added', async (snap) => {
+          try { await peerConnection.addIceCandidate(new RTCIceCandidate(snap.val())); } catch (e) {}
+        });
+
+        const cs = document.getElementById('callStatus'); 
+        if(cs) cs.textContent = 'Waiting for peer... Share the link';
+        
+        history.replaceState(null, '', `#call=${currentRoomId}`);
+        
+        const copyBtn = document.getElementById('copyCallLinkBtn');
+        if (copyBtn) {
+          copyBtn.classList.remove('hidden');
+          copyBtn.onclick = () => {
+            const link = location.origin + location.pathname + `#call=${currentRoomId}`;
+            navigator.clipboard.writeText(link).then(() => toast('Ссылка скопирована!', 'success'));
+          };
+        }
+        toast(`Комната создана. Нажми COPY LINK`, 'success', 5000);
+      } catch (err) {
+        console.error(err);
+        toast('Не удалось получить доступ к камере/микрофону', 'error');
+        document.getElementById('callOverlay')?.classList.add('hidden');
+      }
+    }
+
+    // Подключение к существующему звонку
+    async function joinCall(roomId) {
+      if (!firebaseDb) return;
+      
+      try {
+        currentRoomId = roomId;
+        isCaller = false;
+        document.getElementById('callOverlay')?.classList.remove('hidden');
+        const roomIdEl = document.getElementById('callRoomId'); 
+        if(roomIdEl) roomIdEl.textContent = `Room: ${roomId}`;
+        
+        const cs = document.getElementById('callStatus'); 
+        if(cs) cs.textContent = 'Joining room...';
+
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        const lv = document.getElementById('localVideo'); 
+        if (lv) lv.srcObject = localStream;
+
+        peerConnection = createPeerConnection();
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        // Получаем Offer из Firebase
+        const roomSnap = await firebaseDb.ref(`calls/${roomId}`).once('value');
+        const roomData = roomSnap.val();
+        
+        if (!roomData || !roomData.offer) { 
+          if(cs) cs.textContent = 'Room not found or expired'; 
+          return; 
+        }
+
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(roomData.offer));
+        
+        // Создаем Answer и отправляем
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await firebaseDb.ref(`calls/${roomId}/answer`).set({ type: answer.type, sdp: answer.sdp });
+
+        // Слушаем ICE-кандидаты от создателя
+        firebaseDb.ref(`calls/${roomId}/candidates/caller`).on('child_added', async (snap) => {
+          try { await peerConnection.addIceCandidate(new RTCIceCandidate(snap.val())); } catch (e) {}
+        });
+
+        if(cs) cs.textContent = 'Connecting...';
+      } catch (err) {
+        console.error(err);
+        toast('Ошибка подключения к комнате', 'error');
+        document.getElementById('callOverlay')?.classList.add('hidden');
+      }
+    }
+
+    // Обработчики кнопок звонков
+    document.getElementById('startAudioCallBtn')?.addEventListener('click', () => startCall(false));
+    document.getElementById('startVideoCallBtn')?.addEventListener('click', () => startCall(true));
+
+    // Завершение звонка
+    document.getElementById('endCallBtn')?.addEventListener('click', () => {
+SoundEngine.playCallEnd();
+SoundEngine.playCallEnd();
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      if (peerConnection) peerConnection.close();
+      if (currentRoomId && firebaseDb) firebaseDb.ref(`calls/${currentRoomId}`).remove().catch(() => {});
+      
+      localStream = null; 
+      peerConnection = null; 
+      currentRoomId = null;
+      
+      document.getElementById('callOverlay')?.classList.add('hidden');
+      history.replaceState(null, '', location.pathname);
+    });
+
+    // Отключение микрофона
+    document.getElementById('toggleAudioBtn')?.addEventListener('click', () => {
+      if (!localStream) return;
+      const track = localStream.getAudioTracks()[0];
+      if (track) {
+        track.enabled = !track.enabled;
+        const btn = document.getElementById('toggleAudioBtn');
+        if(btn) btn.innerHTML = track.enabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+      }
+    });
+
+    // Отключение видео
+    document.getElementById('toggleVideoBtn')?.addEventListener('click', () => {
+      if (!localStream) return;
+      const track = localStream.getVideoTracks()[0];
+      if (track) {
+        track.enabled = !track.enabled;
+        const btn = document.getElementById('toggleVideoBtn');
+        if(btn) btn.innerHTML = track.enabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+      }
+    });
+
+    // Авто-вход по ссылке (если открыли #call=ROOM_ID)
+    if (location.hash.startsWith('#call=')) {
+      const roomId = location.hash.slice(6);
+      setTimeout(() => joinCall(roomId), 800);
+    }
+
+    /* ==========================================================================
+       20. ГОЛОСОВАЯ СЦЕНА (VOICE STAGE)
+       ========================================================================== */
+    let onStage = false, stageStream = null;
+
+    // Отрисовка участников сцены
+    function renderStageSpeakers() {
+      const grid = document.getElementById('stageSpeakers'); 
+      if (!grid) return;
+      
+      grid.innerHTML = `
+        <div class="p-3 bg-slate-900/80 rounded-xl border ${onStage ? 'border-emerald-500/40' : 'border-slate-800'} flex flex-col items-center">
+          <div class="w-12 h-12 rounded-full bg-emerald-950 border-2 border-emerald-400 flex items-center justify-center text-emerald-300 font-bold mb-1 ${onStage ? 'animate-pulse' : ''}">
+            ${state.currentUser.slice(0, 2).toUpperCase()}
+          </div>
+          <span class="text-xs font-bold text-slate-200">${escapeHtml(state.currentUser)}</span>
+          <span class="text-[9px] text-emerald-400 font-mono">${onStage ? 'SPEAKING' : 'OFFLINE'}</span>
+        </div>
+        <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 flex flex-col items-center opacity-60">
+          <div class="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold mb-1">X</div>
+          <span class="text-xs text-slate-400">Listener</span>
+          <span class="text-[9px] text-slate-500 font-mono">MUTED</span>
+        </div>`;
+    }
+
+    document.getElementById('openVoiceStageBtn')?.addEventListener('click', () => {
+      document.getElementById('voiceStageModal')?.classList.remove('hidden');
+      renderStageSpeakers();
+    });
+    
+    document.getElementById('closeVoiceStageBtn')?.addEventListener('click', () => document.getElementById('voiceStageModal')?.classList.add('hidden'));
+
+    // Вход на сцену (включает микрофон)
+    document.getElementById('joinStageBtn')?.addEventListener('click', async () => {
+      try {
+        stageStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        onStage = true;
+        document.getElementById('joinStageBtn')?.classList.add('hidden');
+        document.getElementById('leaveStageBtn')?.classList.remove('hidden');
+        renderStageSpeakers();
+        toast('Вы на сцене (локально)', 'success');
+      } catch { 
+        toast('Нет доступа к микрофону', 'error'); 
+      }
+    });
+
+    // Выход со сцены
+    document.getElementById('leaveStageBtn')?.addEventListener('click', () => {
+      if (stageStream) stageStream.getTracks().forEach(t => t.stop());
+      stageStream = null; 
+      onStage = false;
+      document.getElementById('joinStageBtn')?.classList.remove('hidden');
+      document.getElementById('leaveStageBtn')?.classList.add('hidden');
+      renderStageSpeakers();
+    });
+
+    document.getElementById('raiseHandBtn')?.addEventListener('click', () => toast('✋ Рука поднята (демо)', 'info'));
+
+    /* ==========================================================================
+       21. АРКАДА (PAC-MAN)
+       ========================================================================== */
+    document.getElementById('openArcadeBtn')?.addEventListener('click', () => document.getElementById('arcadeModal')?.classList.remove('hidden'));
+    document.getElementById('closeArcadeBtn')?.addEventListener('click', () => document.getElementById('arcadeModal')?.classList.add('hidden'));
+    /* ==========================================================================
+       22. МЕДИА-ПРОСМОТРЩИК (ПОЛНОЭКРАННЫЙ)
+       ========================================================================== */
+    // Эта функция вызывается из renderMessages при клике на картинку/видео
+    async function openMediaViewer(mediaId, kind) {
+      const viewer = document.getElementById('mediaViewer');
+      const img = document.getElementById('mediaViewerImg');
+      const vid = document.getElementById('mediaViewerVideo');
+      if (!viewer) return;
+      
+      img?.classList.add('hidden');
+      vid?.classList.add('hidden');
+      
+      try {
+        const blob = await idbGet(mediaId);
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        
+        if (kind === 'image') {
+          if(img) { img.src = url; img.classList.remove('hidden'); }
+        } else {
+          if(vid) { vid.src = url; vid.classList.remove('hidden'); }
+        }
+        viewer.classList.remove('hidden');
+        viewer.classList.add('flex');
+      } catch (e) {
+        toast('Не удалось загрузить медиа', 'error');
+      }
+    }
+
+    // Закрытие полноэкранного просмотра
+    document.getElementById('closeMediaViewer')?.addEventListener('click', () => {
+      const viewer = document.getElementById('mediaViewer');
+      viewer?.classList.add('hidden');
+      viewer?.classList.remove('flex');
+      const vid = document.getElementById('mediaViewerVideo');
+      if (vid) { vid.pause(); vid.src = ''; }
+    });
+
+    /* ==========================================================================
+       23. ФИЛЬТР СПИСКА ЧАТОВ И ТАБЫ
+       ========================================================================== */
+    // Глобальный поиск по чатам (в сайдбаре)
+    document.getElementById('chatSearchInput')?.addEventListener('input', (e) => {
+      renderChatList(e.target.value);
+    });
+
+    // Визуальное переключение табов Каналы/DM
+    document.getElementById('tabGlobal')?.addEventListener('click', () => {
+      document.getElementById('tabGlobal')?.classList.add('border-cyan-400', 'text-cyan-400');
+      document.getElementById('tabDM')?.classList.remove('border-cyan-400', 'text-cyan-400');
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+    });
+    
+    document.getElementById('tabDM')?.addEventListener('click', () => {
+      document.getElementById('tabDM')?.classList.add('border-cyan-400', 'text-cyan-400');
+      document.getElementById('tabGlobal')?.classList.remove('border-cyan-400', 'text-cyan-400');
+      renderChatList(document.getElementById('chatSearchInput')?.value || '');
+    });
+
+    /* ==========================================================================
+       24. МОБИЛЬНАЯ НАВИГАЦИЯ
+       ========================================================================== */
+    // Нижнее меню (Чаты / Звонки / Настройки)
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Сброс активных классов у всех кнопок
+        document.querySelectorAll('.nav-btn').forEach(b => { 
+          b.classList.remove('text-[#00f0ff]'); 
+          b.classList.add('text-[#708499]'); 
+        });
+        // Установка активной
+        btn.classList.add('text-[#00f0ff]'); 
+        btn.classList.remove('text-[#708499]');
+        
+        const target = btn.dataset.target;
+        
+        if (target === 'viewChats') {
+          document.getElementById('appSidebar')?.classList.remove('hidden');
+          document.getElementById('mainChatContainer')?.classList.add('hidden');
+          document.getElementById('mainChatContainer')?.classList.remove('flex');
+        } else if (target === 'viewCalls') {
+          document.getElementById('startAudioCallBtn')?.click();
+          btn.classList.remove('text-[#00f0ff]'); 
+          btn.classList.add('text-[#708499]');
+        } else if (target === 'viewSettings') {
+          document.getElementById('openSettingsBtn')?.click();
+          btn.classList.remove('text-[#00f0ff]'); 
+          btn.classList.add('text-[#708499]');
+        }
+      });
+    });
+
+    // Кнопка "Назад" в мобильном чате
+    document.getElementById('mobileBackBtn')?.addEventListener('click', () => {
+      document.getElementById('mainChatContainer')?.classList.add('hidden');
+      document.getElementById('mainChatContainer')?.classList.remove('flex');
+      document.getElementById('appSidebar')?.classList.remove('hidden');
+    });
+
+ 
+    /* ==========================================================================
+       25. ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ (Escape, Scroll)
+       ========================================================================== */
+    // Закрытие контекстного меню по Escape
+    document.addEventListener('keydown', (e) => {
+    // Звук клика для всех кнопок
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('button') || e.target.closest('.theme-btn') || e.target.closest('.nav-btn') || e.target.closest('label[for]')) {
+        SoundEngine.playClick();
+      }
+    });
+      if (e.key === 'Escape') {
+    // Звук клика для всех кнопок
+    document.addEventListener('click', (e) => {
+      const isButton = e.target.closest('button') || e.target.closest('.theme-btn') || e.target.closest('.nav-btn') || e.target.closest('label[for]');
+      if (isButton) {
+        SoundEngine.playClick();
+      }
+    });
+        contextMenu?.classList.add('hidden');
+        quickReactPanel?.classList.add('hidden');
+        document.getElementById('emojiModal')?.classList.add('hidden');
+      }
+    });
+
+    // Скрытие контекстного меню при скролле
+    messageFeedEl?.addEventListener('scroll', () => {
+      contextMenu?.classList.add('hidden');
+    });
+
+    // Эмодзи-пикер
+    document.getElementById('emojiPickerBtn')?.addEventListener('click', () => {
+      document.getElementById('emojiModal')?.classList.toggle('hidden');
+    });
+    document.getElementById('closeEmojiBtn')?.addEventListener('click', () => {
+      document.getElementById('emojiModal')?.classList.add('hidden');
+    });
+    document.querySelectorAll('#emojiModal [data-emoji]').forEach(el => {
+      el.addEventListener('click', () => {
+        const input = document.getElementById('messageInput');
+        if(input) { input.value += el.dataset.emoji; input.focus(); }
+        document.getElementById('emojiModal')?.classList.add('hidden');
+      });
+    });
+
+    // Переключение Матрицы
+    document.getElementById('toggleMatrixBtn')?.addEventListener('click', () => { 
+      window.matrixActive = !window.matrixActive; 
+      const s = loadSettings(); 
+      s.matrixRain = window.matrixActive; 
+      saveSettings(s); 
+      toast(window.matrixActive ? 'Matrix rain ON' : 'Matrix rain OFF'); 
+    });
+
+    /* ==========================================================================
+       26. ИНИЦИАЛИЗАЦИЯ (WINDOW.ONLOAD)
+       ========================================================================== */
+     /* ==========================================================================
+       27. ПАТЧ: ВОЗВРАЩЕНИЕ УПУЩЕННЫХ ФУНКЦИЙ
+       ========================================================================== */
        
+    // 1. ВОЗВРАЩАЕМ CRYPTOENGINE (ECDH)
+    const CryptoEngine = {
+      keyPair: null,
+      async generateKeyPair() {
+        try {
+          this.keyPair = await window.crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+          return this.keyPair;
+        } catch (e) {
+          console.warn('Crypto error:', e);
+          return null;
+        }
+      },
+      async exportPublicKey() {
+        if (!this.keyPair) await this.generateKeyPair();
+        if (!this.keyPair) return 'Error: Crypto not available';
+        const exported = await window.crypto.subtle.exportKey('raw', this.keyPair.publicKey);
+        return btoa(String.fromCharCode(...new Uint8Array(exported)));
+      }
+    };
+    // Генерируем ключи при старте
+    CryptoEngine.generateKeyPair().catch(()=>{});
+
+    // 2. ВОЗВРАЩАЕМ МАТРИЦУ (ФОН)
+    const canvas = document.getElementById('matrixCanvas');
+    let ctx, columns, drops;
+    if (canvas) {
+      ctx = canvas.getContext('2d');
+      const resizeCanvas = () => { 
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+        columns = Math.floor(canvas.width / 14); 
+        drops = Array(columns).fill(1); 
+      };
+      resizeCanvas(); 
+      window.addEventListener('resize', resizeCanvas);
+      
+      const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZЯЖФΨΩ░▒▓█';
+      setInterval(() => {
+        if (!window.matrixActive || !ctx) { 
+          ctx.clearRect(0, 0, canvas.width, canvas.height); 
+          return; 
+        }
+        ctx.fillStyle = 'rgba(5, 6, 10, 0.08)'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Цвет берем из текущей темы
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-neon').trim() || '#00f0ff'; 
+        ctx.font = `14px 'Fira Code', monospace`;
+        
+        for (let i = 0; i < drops.length; i++) { 
+          const text = chars[Math.floor(Math.random() * chars.length)]; 
+          ctx.fillText(text, i * 14, drops[i] * 14); 
+          if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0; 
+          drops[i]++; 
+        }
+      }, 45);
+    }
+
+    // 3. ВОЗВРАЩАЕМ СЧЕТЧИК НЕПРОЧИТАННЫХ В ЗАГОЛОВКЕ
+    function updateTitle() {
+      const total = state.chats.reduce((s, c) => s + (c.unread || 0), 0);
+      document.title = total > 0 ? `(${total}) CYBER_PULSE MATRIX` : 'CYBER_PULSE MATRIX';
+    }
+
+    // 4. ФИКС БАГА С ДУБЛИРОВАНИЕМ ОБРАБОТЧИКА ИСТОРИЙ
+    // Отвязываем старый обработчик и вешаем один новый
+    const addStoryBtn = document.getElementById('addStoryBtn');
+    if (addStoryBtn) {
+      addStoryBtn.onclick = () => {
+        const input = document.createElement('input'); 
+        input.type = 'file'; 
+        input.accept = 'image/*,video/*'; 
+        
+        input.onchange = async () => { 
+          const file = input.files[0]; 
+          if (!file) return; 
+          if (file.size > 5 * 1024 * 1024) { toast('Максимум 5 МБ', 'error'); return; } 
+          
+          const mediaId = uid(); 
+          await idbPut(mediaId, file); 
+          
+          state.stories.unshift({ 
+            id: mediaId, 
+            author: state.currentUser, 
+            avatar: 'https://via.placeholder.com/40/00f0ff/000?text=OP', 
+            mediaUrl: URL.createObjectURL(file), 
+            type: file.type.startsWith('video') ? 'video' : 'image' 
+          }); 
+          
+          saveState(); 
+          renderStories(); 
+          toast('Сторис добавлен', 'success'); 
+        }; 
+        
+        input.click(); 
+      };
+    }
+
+    // 5. ОБНОВЛЯЕМ ЗАГОЛОВОК ПРИ ОТПРАВКЕ/ПРОЧТЕНИИ
+    // Патчим функцию renderChatList, чтобы она вызывала updateTitle
+    const originalRenderChatList = renderChatList;
+    renderChatList = function(filter = '') {
+      originalRenderChatList(filter);
+      updateTitle();
+    };   
+          // Включение/выключение режима секретного сообщения
+    document.getElementById('secretMsgBtn')?.addEventListener('click', () => {
+      state.secretMode = !state.secretMode;
+      const btn = document.getElementById('secretMsgBtn');
+      if (state.secretMode) {
+        btn.classList.remove('text-slate-400');
+        btn.classList.add('text-red-500', 'animate-pulse');
+        toast('Режим самоуничтожения ВКЛ (10 сек)', 'error');
+      } else {
+        btn.classList.remove('text-red-500', 'animate-pulse');
+        btn.classList.add('text-slate-400');
+      }
+    });
+
+    window.onload = async () => {
+       // ... твой код инициализации
+      // 1. Открываем IndexedDB
+      await openIDB(); 
+      
+      // 2. Применяем настройки
+      const s = loadSettings(); 
+      applyLanguage(s.language || 'ru'); 
+      
+      // 3. Восстанавливаем тему
+      if (s.theme) {
+        document.body.classList.remove('theme-cyan', 'theme-emerald', 'theme-pink', 'theme-amber');
+        document.body.classList.add('theme-' + s.theme);
+      }
+      
+      // 4. Рендерим всё
+      renderChatList(); 
+      renderMessages(true); 
+      renderStories();
+      
+      // 5. Устанавливаем профиль
+      const uc = document.getElementById('userCallsign'); 
+      if(uc) uc.textContent = state.currentUser; 
+      const ua = document.getElementById('userAvatar'); 
+      if(ua) ua.textContent = state.currentUser.slice(0, 2).toUpperCase();
+      
+      // 6. Восстанавливаем закрепленное сообщение
+      if (state.pinned) { 
+        const pbc = document.getElementById('pinnedBannerContent'); 
+        if(pbc) pbc.textContent = state.pinned.text; 
+        document.getElementById('pinnedBanner')?.classList.remove('hidden'); 
+      }
+      
+      // 7. Финальная проверка
+      console.log('%c CYBER_PULSE MATRIX ready ', 'background: #00f0ff; color: #000; font-weight: bold; padding: 4px;');
+      console.log('Firebase:', !!firebaseDb);
+      console.log('IndexedDB:', !!idb);
+      console.log('Chats:', state.chats.length);
+      console.log('Messages:', Object.values(state.messages).flat().length);
+    };
+  </script>
+</body>
+</html>
