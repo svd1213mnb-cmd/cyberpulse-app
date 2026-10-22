@@ -929,7 +929,8 @@
       stories: defaultStories, 
       viewedStories: [], 
       pinned: null, 
-      pendingAttachment: null, 
+      pendingAttachment: null,
+ secretMode: false, 
       searchMatches: [], 
       searchIndex: -1 
     };
@@ -2761,7 +2762,22 @@ SoundEngine.playCallEnd();
       originalRenderChatList(filter);
       updateTitle();
     };   
-      window.onload = async () => {
+          // Включение/выключение режима секретного сообщения
+    document.getElementById('secretMsgBtn')?.addEventListener('click', () => {
+      state.secretMode = !state.secretMode;
+      const btn = document.getElementById('secretMsgBtn');
+      if (state.secretMode) {
+        btn.classList.remove('text-slate-400');
+        btn.classList.add('text-red-500', 'animate-pulse');
+        toast('Режим самоуничтожения ВКЛ (10 сек)', 'error');
+      } else {
+        btn.classList.remove('text-red-500', 'animate-pulse');
+        btn.classList.add('text-slate-400');
+      }
+    });
+
+    window.onload = async () => {
+       // ... твой код инициализации
       // 1. Открываем IndexedDB
       await openIDB(); 
       
