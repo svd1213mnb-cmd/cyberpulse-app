@@ -3042,7 +3042,7 @@
     });
 
     // Эмодзи-пикер
-   
+   window.addEventListener('load', () => {
     const emojiBtn = document.getElementById('emojiPickerBtn');
     const emojiPicker = document.querySelector('emoji-picker');
     const msgInput = document.getElementById('messageInput');
@@ -3067,7 +3067,8 @@
                 emojiPicker.classList.add('hidden');
             }
         });
-      }
+    }
+  });
 
     // Переключение Матрицы
     document.getElementById('toggleMatrixBtn')?.addEventListener('click', () => {
