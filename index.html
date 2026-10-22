@@ -2921,23 +2921,17 @@ SoundEngine.playCallEnd();
       });
     }
     window.onload = async () => {
-       // ... твой код инициализации
       // 1. Открываем IndexedDB
       await openIDB(); 
-    window.onload = async () => {
-      await openIDB(); 
-      await applyChatBackground(); // <--- ДОБАВИТЬ ЭТУ СТРОЧКУ
       
-     
-      
-      // 2. Применяем настройки
-      const s = loadSettings(); 
-      applyLanguage(s.language || 'ru'); 
+      // 2. Применяем настройки (называем переменную settings, чтобы не было конфликтов)
+      const settings = loadSettings(); 
+      applyLanguage(settings.language || 'ru'); 
       
       // 3. Восстанавливаем тему
-      if (s.theme) {
+      if (settings.theme) {
         document.body.classList.remove('theme-cyan', 'theme-emerald', 'theme-pink', 'theme-amber');
-        document.body.classList.add('theme-' + s.theme);
+        document.body.classList.add('theme-' + settings.theme);
       }
       
       // 4. Рендерим всё
