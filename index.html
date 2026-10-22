@@ -1022,15 +1022,15 @@
     }
 
     // --- Отрисовка ленты сообщений ---
-       function renderMessages(forceScroll = false) {
+          function renderMessages(forceScroll = false) {
       if (!messageFeedEl) return;
+      
       const isAtBottom = messageFeedEl.scrollHeight - messageFeedEl.scrollTop - messageFeedEl.clientHeight < 150;
       
-      // ФИЛЬТР: удаляем взорвавшиеся сообщения из памяти
       if (state.messages[state.activeChatId]) {
         state.messages[state.activeChatId] = state.messages[state.activeChatId].filter(msg => {
           if (msg.secret && msg.expiresAt && Date.now() > msg.expiresAt) {
-            return false; // Сообщение взорвалось, удаляем из массива
+            return false;
           }
           return true;
         });
@@ -1040,7 +1040,6 @@
       const currentMsgs = state.messages[state.activeChatId] || [];
 
       currentMsgs.forEach(msg => {
-        // Таймер для оставшихся секретных сообщений
         if (msg.secret && msg.expiresAt && Date.now() <= msg.expiresAt) {
           setTimeout(() => renderMessages(), msg.expiresAt - Date.now() + 100);
         }
@@ -1054,29 +1053,18 @@
         meta.textContent = `${msg.sender} • ${formatTime(msg.timestamp)}`;
         
         const bubble = document.createElement('div');
-        // ДОБАВЛЯЕМ КРАСНУЮ РАМКУ, ЕСЛИ СООБЩЕНИЕ СЕКРЕТНОЕ
         const secretClass = msg.secret ? 'border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]' : '';
         bubble.className = `max-w-[85%] md:max-w-md px-3.5 py-2 rounded-xl text-sm relative ${msg.isSelf ? 'msg-bubble-self text-white' : 'msg-bubble-other text-slate-200'} ${secretClass}`;
 
-        // Дальше идет твой оригинальный код отрисовки (текст, медиа, реакции и т.д.)
-        // Вставь его сюда...
-        // 1. Ответ на сообщение (Quote)
+        // Ответ на сообщение
         if (msg.replyTo) { 
           const quote = document.createElement('div'); 
           quote.className = 'mb-2 pl-2.5 pr-2 py-1.5 rounded-md bg-black/30 border-l-2 border-cyan-400 text-[11px] cursor-pointer hover:bg-black/50 transition'; 
           quote.innerHTML = `<div class="font-bold text-cyan-300 flex items-center gap-1"><i class="fas fa-reply text-[9px]"></i> ${escapeHtml(msg.replyTo.sender)}</div><div class="truncate text-slate-300 opacity-90">${escapeHtml(msg.replyTo.text?.slice(0, 90) || '[media]')}</div>`; 
-          quote.onclick = () => { 
-            const orig = document.querySelector(`[data-msg-id="${msg.replyTo.id}"]`); 
-            if (orig) { 
-              orig.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-              orig.classList.add('ring-2', 'ring-cyan-400'); 
-              setTimeout(() => orig.classList.remove('ring-2', 'ring-cyan-400'), 1500); 
-            } 
-          }; 
           bubble.appendChild(quote); 
         }
 
-        // 2. Текст сообщения
+        // Текст
         if (msg.text && !msg.poll && !msg.media) { 
           const textDiv = document.createElement('div'); 
           textDiv.className = 'msg-text'; 
@@ -1084,7 +1072,7 @@
           bubble.appendChild(textDiv); 
         }
 
-        // 3. Опросы (Polls)
+        // Опросы
         if (msg.poll) { 
           const pollDiv = document.createElement('div'); 
           pollDiv.className = 'space-y-2 w-full min-w-[200px]'; 
@@ -1108,14 +1096,118 @@
           bubble.appendChild(pollDiv); 
         }
 
-        // 4. Медиа (Картинки, видео, аудио, файлы)
+        // Медиа
         if (msg.media) { 
           const mediaDiv = document.createElement('div'); 
           mediaDiv.className = 'msg-media mt-1'; 
           
           if (msg.media.type === 'image') { 
             const img = document.createElement('img'); 
-          }
+            loadMediaInto(img, msg.media.id, 'image'); 
+            img.onclick = () => openMediaViewer(msg.media.id, 'image'); 
+            mediaDiv.appendChild(img); 
+          } else if (msg.media.type === 'video') { 
+            const vid = document.createElement('video'); 
+            vid.controls = true; 
+            loadMediaInto(vid, msg.media.id, 'video'); 
+            mediaDiv.appendChild(vid); 
+          } else if (msg.media.type === 'audio') { 
+            const w = document.createElement('div'); 
+            w.className = 'custom-audio';
+            const btn = document.createElement('button');
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+            const track = document.createElement('div');
+            track.className = 'progress-track';
+            const fill = document.createElement('div');
+            fill.className = 'progress-fill';
+            track.appendChild(fill);
+            const time = document.createElement('span');
+            time.className = 'time-display';
+            time.textContent = '0:00';
+            const aud = document.createElement('audio');
+            aud.className = 'hidden';
+            loadMediaInto(aud, msg.media.id, 'audio');
+            btn.onclick = () => {
+              if (aud.paused) { aud.play(); btn.innerHTML = '<i class="fas fa-pause"></i>'; }
+              else { aud.pause(); btn.innerHTML = '<i class="fas fa-play"></i>'; }
+            };
+            aud.onended = () => { btn.innerHTML = '<i class="fas fa-play"></i>'; fill.style.width = '0%'; };
+            aud.ontimeupdate = () => {
+              if (aud.duration) {
+                const percent = (aud.currentTime / aud.duration) * 100;
+                fill.style.width = percent + '%';
+                const m = Math.floor(aud.currentTime / 60);
+                const s = Math.floor(aud.currentTime % 60);
+                time.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+              }
+            };
+            track.onclick = (e) => {
+              const rect = track.getBoundingClientRect();
+              const pos = (e.clientX - rect.left) / rect.width;
+              if (aud.duration) aud.currentTime = pos * aud.duration;
+            };
+            w.appendChild(btn); w.appendChild(track); w.appendChild(time); w.appendChild(aud);
+            mediaDiv.appendChild(w); 
+          } else if (msg.media.type === 'video-note') { 
+            const circle = document.createElement('div'); 
+            circle.className = 'video-note-bubble'; 
+            const vid = document.createElement('video'); 
+            vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true; 
+            loadMediaInto(vid, msg.media.id, 'video'); 
+            circle.appendChild(vid); 
+            circle.onclick = () => openMediaViewer(msg.media.id, 'video'); 
+            mediaDiv.appendChild(circle); 
+          } else { 
+            const a = document.createElement('a'); 
+            a.href = '#'; 
+            a.className = 'text-cyan-400 underline text-xs flex items-center gap-1'; 
+            a.innerHTML = `<i class="fas fa-file"></i> ${msg.media.name || 'file'}`; 
+            a.onclick = async (e) => { 
+              e.preventDefault(); 
+              const blob = await idbGet(msg.media.id); 
+              if (blob) { 
+                const url = URL.createObjectURL(blob); 
+                const link = document.createElement('a'); 
+                link.href = url; link.download = msg.media.name || 'file'; link.click(); 
+                URL.revokeObjectURL(url); 
+              } 
+            }; 
+            mediaDiv.appendChild(a); 
+          } 
+          bubble.appendChild(mediaDiv); 
+        }
+
+        // Реакции
+        if (msg.reactions && Object.keys(msg.reactions).length) { 
+          const reactRow = document.createElement('div'); 
+          reactRow.className = 'flex flex-wrap mt-1'; 
+          Object.entries(msg.reactions).forEach(([emoji, users]) => { 
+            if (!users || !users.length) return; 
+            const chip = document.createElement('span'); 
+            chip.className = `reaction-chip ${users.includes(state.currentUser) ? 'mine' : ''}`; 
+            chip.textContent = `${emoji} ${users.length}`; 
+            chip.onclick = () => toggleReaction(msg.id, emoji); 
+            reactRow.appendChild(chip); 
+          }); 
+          bubble.appendChild(reactRow); 
+        }
+
+        wrap.appendChild(meta); 
+        wrap.appendChild(bubble);
+        
+        wrap.oncontextmenu = (e) => showContextMenu(e, msg); 
+        let pressTimer; 
+        wrap.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => showContextMenu(e.touches[0] || e, msg), 500); }, { passive: true }); 
+        wrap.addEventListener('touchend', () => clearTimeout(pressTimer)); 
+        wrap.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        
+        messageFeedEl.appendChild(wrap);
+      });
+      
+      if (isAtBottom || forceScroll) {
+        messageFeedEl.scrollTop = messageFeedEl.scrollHeight;
+      }
+    }
           
             loadMediaInto(img, msg.media.id, 'image'); 
             img.onclick = () => openMediaViewer(msg.media.id, 'image'); 
